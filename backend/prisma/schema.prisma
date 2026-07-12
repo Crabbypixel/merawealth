@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+enum SessionTerminationReason {
+    LOGOUT
+    NEW_LOGIN
+    EXPIRED
+    ADMIN
+}
+
+enum UserStatus {
+    PENDING
+    ACTIVE
+    REJECTED
+    INACTIVE
+}
+
+model User {
+    id Int @id @default(autoincrement())
+
+    phoneNumber String @unique
+    email       String @unique
+    name        String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    status UserStatus @default(PENDING)
+
+    otpLogs  OtpLog[]
+    sessions Session[]
+}
+
+model OtpLog {
+    id Int @id @default(autoincrement())
+
+    challenge String @unique
+
+    otp  Int
+    used Boolean @default(false)
+
+    expiresAt DateTime
+    createdAt DateTime @default(now())
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+    id Int @id @default(autoincrement())
+
+    sessionToken String  @unique
+    isActive     Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    expiresAt DateTime
+    logoutAt DateTime?
+
+    terminationReason SessionTerminationReason?
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,78 @@
+# =========================
+# Dependencies
+# =========================
+**/node_modules/
+.pnpm-store/
+
+# =========================
+# Environment files
+# =========================
+**/.env
+**/.env.*
+!.env.example
+
+# =========================
+# Next.js
+# =========================
+**/.next/
+**/out/
+
+# =========================
+# NestJS / TypeScript
+# =========================
+**/dist/
+**/build/
+**/coverage/
+*.tsbuildinfo
+
+# =========================
+# Prisma
+# =========================
+backend/generated/
+
+# =========================
+# Logs
+# =========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Package managers
+# =========================
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# =========================
+# IDEs
+# =========================
+.vscode/
+.vs/
+.idea/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Deployment
+# =========================
+.vercel/
+
+# =========================
+# Certificates
+# =========================
+*.pem
+
+# =========================
+# Next.js generated
+# =========================
+next-env.d.ts
