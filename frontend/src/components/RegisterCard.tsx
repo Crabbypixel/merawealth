@@ -5,24 +5,24 @@ import { useState } from "react";
 import Link from "next/link";
 
 export default function RegisterCard() {
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [phoneNumber, setPhoneNumber] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
+    const [name, setName] = useState("");                   // State to hold name
+    const [email, setEmail] = useState("");                 // State to hold email
+    const [phoneNumber, setPhoneNumber] = useState("");     // State to hold phone number
+    const [loading, setLoading] = useState(true);           // State for loading status
+    const [error, setError] = useState("");                 // State for error messages from backend
+    const [success, setSuccess] = useState("");             // State for success messages from backend
 
-    const router = useRouter();
+    const router = useRouter();                             // Navigation hook to programmatically navigate between pages
 
+    // Runs when user clicks the "Register" button.
     async function handleRegister() {
-        console.log("Button clicked");
-        console.log(process.env.NEXT_PUBLIC_API_URL);
-
+        // Reset error and success messages, and set loading state
         setLoading(true);
         setError("");
         setSuccess("");
 
         try {
+            // Perform a POST request
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
                 {
@@ -38,6 +38,7 @@ export default function RegisterCard() {
                 }
             );
 
+            // Parse the response from the backend
             const data = await response.json();
 
             if (!response.ok) {
@@ -47,7 +48,7 @@ export default function RegisterCard() {
             // Success
             setSuccess(data.message);
             
-            // Wait for 1 second
+            // Wait for 1 second - UX design
             await new Promise((resolve) => setTimeout(resolve, 1000));
 
             // Route to login
@@ -67,6 +68,7 @@ export default function RegisterCard() {
         }
     }
 
+    // Render the registration form UI
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 px-4">
             <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-8">

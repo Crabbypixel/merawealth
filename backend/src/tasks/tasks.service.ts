@@ -2,12 +2,15 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Cron, CronExpression } from "@nestjs/schedule";
 
+// This class contains cron jobs which cleanup expired sessions and OTPs every 5 mins
 @Injectable()
 export class TasksService {
     constructor(private readonly prisma: PrismaService) {}
 
     @Cron(CronExpression.EVERY_5_MINUTES)
     async cleanupExpiredSessions() {
+        // Mark isActive bool as false and add an expiryDate if the entry is active but exists beyond the expiry date.
+        // Notice that we aren't deleting the session history, might be useful later.
         const result = await this.prisma.session.updateMany({
             where: {
                 isActive: true,
@@ -29,6 +32,7 @@ export class TasksService {
 
     @Cron(CronExpression.EVERY_5_MINUTES)
     async deleteExpiredOtps() {
+        // Delete expired OTPs
         const result = await this.prisma.otpLog.deleteMany({
             where: {
                 expiresAt: {

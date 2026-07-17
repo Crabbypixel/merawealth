@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function VerifyOtpCard() {
-    const [otp, setOtp] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [otp, setOtp] = useState("");                 // State to hold the OTP entered by the user         
+    const [loading, setLoading] = useState(false);      // State for loading status
+    const [error, setError] = useState("");             // State for error messages from backend
 
-    const router = useRouter();
+    const router = useRouter();                         // Navigation hook to programmatically navigate between pages
 
+    // If challenge key exists, we can stay on this page, else redirect to login page.
     useEffect(() => {
         const challenge = localStorage.getItem("challenge");
 
@@ -19,11 +20,15 @@ export default function VerifyOtpCard() {
         }
     }, [router]);
 
+    // Handle OTP verification when the user clicks the "Verify OTP" button.
     async function handleVerifyOtp() {
+        // Reset error and set loading state
         setLoading(true);
-        setError("");   // Clear previous errors on retry
+        setError("");
 
+        // Retrieve the challenge from local storage
         const challenge = localStorage.getItem("challenge");
+
         if(challenge === null) {
             setError("Challenge missing.");
             setLoading(false);
@@ -46,12 +51,19 @@ export default function VerifyOtpCard() {
                 }
             );
 
-            // Success 
+            // Success
+            // Parse the response from the backend
             const data = await response.json();
 
+            // If user is verified, remove the challenge from local storge and route to dashboard
             if (data.success) {
                 localStorage.removeItem("challenge");
-                router.push("/dashboard");
+
+                if(data.role === "CLIENT")
+                    router.push("/dashboard");
+                else if(data.role === "ADMIN")
+                    router.push("/admin");
+                
             } else {
                 setError(data.message);
             }
@@ -71,6 +83,7 @@ export default function VerifyOtpCard() {
         }
     }
 
+    // Render the OTP verification form UI
     return (
         /* Outer centering wrapper layout */
         <div className="flex min-h-screen items-center justify-center bg-gray-50">

@@ -4,70 +4,166 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
 }
 
 enum SessionTerminationReason {
-    LOGOUT
-    NEW_LOGIN
-    EXPIRED
-    ADMIN
+  LOGOUT
+  NEW_LOGIN
+  EXPIRED
+  ADMIN
 }
 
 enum UserStatus {
-    PENDING
-    ACTIVE
-    REJECTED
-    INACTIVE
+  PENDING
+  ACTIVE
+  REJECTED
+  INACTIVE
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TransactionType {
+  BUY
+  SELL
+}
+
+enum TransactionStatus {
+  PENDING
+  UNDER_PROCESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+model Admin {
+  id Int @id @default(autoincrement())
+
+  name        String
+  phoneNumber String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  otpLogs  OtpLog[]
+  sessions Session[]
 }
 
 model User {
-    id Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-    phoneNumber String @unique
-    email       String @unique
-    name        String
+  phoneNumber String @unique
+  email       String @unique
+  name        String
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    status UserStatus @default(PENDING)
+  status UserStatus @default(PENDING)
 
-    otpLogs  OtpLog[]
-    sessions Session[]
+  otpLogs      OtpLog[]
+  sessions     Session[]
+  transactions Transaction[]
 }
 
+// Exactly one of userId or adminId must be non-null.
+// The role field indicates which identity owns the OTP/session.
 model OtpLog {
-    id Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-    challenge String @unique
+  challenge String @unique
 
-    otp  Int
-    used Boolean @default(false)
+  otp  Int
+  used Boolean @default(false)
 
-    expiresAt DateTime
-    createdAt DateTime @default(now())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
-    userId Int
-    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  adminId Int?
+  admin   Admin? @relation(fields: [adminId], references: [id], onDelete: Cascade)
 }
 
+// Exactly one of userId or adminId must be non-null.
+// The role field indicates which identity owns the OTP/session.
 model Session {
-    id Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-    sessionToken String  @unique
-    isActive     Boolean @default(true)
+  sessionToken String  @unique
+  isActive     Boolean @default(true)
 
-    createdAt DateTime @default(now())
-    expiresAt DateTime
-    logoutAt DateTime?
+  role Role
 
-    terminationReason SessionTerminationReason?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  logoutAt  DateTime?
 
-    userId Int
-    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  terminationReason SessionTerminationReason?
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  adminId Int?
+  admin   Admin? @relation(fields: [adminId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  companyCode String @id @db.VarChar(8)
+
+  companyName String  @unique
+  companyLogo String
+  companyUrl  String?
+  shortNote   String?
+
+  indicativePrice Decimal       @db.Decimal(18, 2)
+  minQty          Int
+  isActive        CompanyStatus @default(INACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  companyCode String
+  company     Company @relation(fields: [companyCode], references: [companyCode])
+
+  type TransactionType
+
+  quantity Int
+
+  priceAtOrder Decimal @db.Decimal(12, 2)
+  totalAmount  Decimal @db.Decimal(14, 2)
+
+  status TransactionStatus @default(PENDING)
+  
+  adminRemarks String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([userId])
 }

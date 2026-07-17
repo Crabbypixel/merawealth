@@ -1,5 +1,14 @@
 import { Body, Post, Controller, Get } from '@nestjs/common';
-import { VerifyOtpDto } from './auth/dto/verify-otp.dto';
+
+/*
+ * Basic application controller used for development and health checks.
+ *
+ * - GET /hello : Confirms that the backend is running and reachable.
+ * - POST /echo : Utility endpoint for testing request parsing during development.
+ *
+ * These endpoints are independent of the application's business logic.
+ * This controller may later be replaced with a dedicated HealthModule.
+ */
 
 interface GreetingResponse {
   message: string;

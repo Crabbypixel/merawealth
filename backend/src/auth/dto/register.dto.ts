@@ -1,12 +1,13 @@
-import { IsEmail, IsString, Matches } from "class-validator";
+import { IsString } from "class-validator";
 
+// DTO for user registration
 export class RegisterDto {
     @IsString()
     name: string;
 
-    @Matches(/^\d{10}$/)
+    @IsString()
     phoneNumber: string;
 
-    @IsEmail()
+    @IsString()
     email: string;
 }

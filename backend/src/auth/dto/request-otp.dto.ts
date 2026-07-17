@@ -1,7 +1,7 @@
-import { IsString, Matches } from "class-validator";
+import { IsString } from "class-validator";
 
+// DTO for requesting OTP - just a phone number
 export class RequestOtpDto {
-    //@IsString()
-    //@Matches(/^\d{10}$/, { success: false, message: "Phone number must be exactly 10 digits" })
+    @IsString()
     phoneNumber: string;
 }

@@ -7,6 +7,7 @@ import { Req } from "@nestjs/common";
 import type { Response } from "express";
 import * as Express from 'express';
 
+// Handles user authentication endpoints (OTP, registration, session management)
 @Controller("auth")
 export class AuthController {
     constructor(private readonly authService: AuthService) {}

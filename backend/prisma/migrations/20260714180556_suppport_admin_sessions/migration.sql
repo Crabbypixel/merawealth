@@ -1,0 +1,13 @@
+-- AlterTable
+ALTER TABLE "OtpLog" ADD COLUMN     "adminId" INTEGER,
+ALTER COLUMN "userId" DROP NOT NULL;
+
+-- AlterTable
+ALTER TABLE "Session" ADD COLUMN     "adminId" INTEGER,
+ALTER COLUMN "userId" DROP NOT NULL;
+
+-- AddForeignKey
+ALTER TABLE "OtpLog" ADD CONSTRAINT "OtpLog_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "Admin"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "Admin"("id") ON DELETE CASCADE ON UPDATE CASCADE;

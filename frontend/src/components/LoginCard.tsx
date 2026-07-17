@@ -5,16 +5,15 @@ import { useState } from "react";
 import Link from "next/link";
 
 export default function LoginCard() {
-    const [phoneNumber, setPhoneNumber] = useState("");     // Current input
-    const [loading, setLoading] = useState(false);          // Disable button while waiting
-    const [error, setError] = useState("");                 // Show backend errors
+    const [phoneNumber, setPhoneNumber] = useState("");     // State to hold phone number
+    const [loading, setLoading] = useState(true);           // State for loading status, true while fetching user data, false once fetched
+    const [error, setError] = useState("");                 // State for error messages
 
-    const router = useRouter();
+    const router = useRouter();                             // Navigation hook to programmatically navigate between pages
 
+    // Send OTP request to the backend when the user clicks the "Send OTP" button.
     async function handleSendOtp() {
-        console.log("Button clicked");
-        console.log(process.env.NEXT_PUBLIC_API_URL);
-
+        // Reset error and set loading state
         setLoading(true);
         setError("");
 
@@ -32,14 +31,14 @@ export default function LoginCard() {
                 }
             );
 
+            // Parse the response from the backend
             const data = await response.json();
             if (!response.ok) {
                 throw new Error(data.message);
             }
 
             // Success
-
-            // Store challenge in a map before we move to verify-otp page
+            // Store challenge in local storage before we move to verify-otp page, as router push will cause a loss of state.
             localStorage.setItem("challenge", data.challenge);
             router.push("/verify-otp");
         }
@@ -57,9 +56,9 @@ export default function LoginCard() {
         }
     }
 
+    // Render the login form UI
     return (
         <div className="bg-white p-8 rounded-xl shadow-lg w-96">
-
             <h1 className="text-3xl text-center font-bold mb-2 text-black">
                 Welcome back!
             </h1>
@@ -76,7 +75,6 @@ export default function LoginCard() {
                 onChange={(e) => { setPhoneNumber(e.target.value) }}
             />
 
-            {/* Repositioned Error Message here so it doesn't break the layout below the button */}
             {error && (
                 <p className="text-red-600 text-sm mb-4 text-center font-medium">
                     {error}

@@ -3,18 +3,40 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+// This component displays a message to the user when their session has ended, either due to logout or session expiration. It provides a link for the user to navigate back to the login page.
+// See DashboardCard for more details on how the session is managed and how the user is redirected to this page when their session ends.
 export default function SessionEndedCard() {
     const searchParams = useSearchParams();
 
+    // DashboardCard:
     const reason = searchParams.get("reason");
 
-    const title = 
-        reason === "logout" ? "Logged out" : "Session expired";
+    const statusContent = {
+        logout: {
+            title: "Logged out",
+            message: "You have been logged out successfully.",
+        },
+        expired: {
+            title: "Session expired",
+            message: "Your session has expired. Please log in again.",
+        },
+        pending: {
+            title: "Account pending approval",
+            message: "Your account is awaiting administrator approval.",
+        },
+        rejected: {
+            title: "Account rejected",
+            message: "Your registration has been rejected.",
+        },
+        inactive: {
+            title: "Account inactive",
+            message: "Your account has been deactivated. Please contact the administrator.",
+        },
+    } as const;
 
-    const message = 
-        reason === "logout" ? "You have been logged out successfully." : "Your session has expired. Please log in again.";
+    const { title, message } = statusContent[reason as keyof typeof statusContent] ?? statusContent.expired;
 
-
+    // Render the session ended message UI
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
 

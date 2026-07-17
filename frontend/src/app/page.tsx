@@ -2,6 +2,9 @@
 
 import Link from "next/link"
 
+// This is the main page of the application.
+// It serves as a landing page -> To be developed further
+// Minimal for now
 export default function Home() {
     return (
         <main className="min-h-screen flex flex-col items-center justify-center gap-6">
