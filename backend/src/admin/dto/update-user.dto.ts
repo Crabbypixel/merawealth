@@ -1,8 +1,6 @@
 import { IsEmail, IsString, Length, Matches } from "class-validator";
 
-// DTO for user registration
-export class RegisterDto {
-
+export class UpdateUserDto {
     @IsString()
     @Length(1, 100)
     name: string;

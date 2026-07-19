@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function LoginCard() {
     const [phoneNumber, setPhoneNumber] = useState("");     // State to hold phone number
-    const [loading, setLoading] = useState(true);           // State for loading status, true while fetching user data, false once fetched
+    const [loading, setLoading] = useState(false);           // State for loading status, true while fetching user data, false once fetched
     const [error, setError] = useState("");                 // State for error messages
 
     const router = useRouter();                             // Navigation hook to programmatically navigate between pages
@@ -82,11 +82,13 @@ export default function LoginCard() {
             )}
 
             <button
-                className="w-full bg-blue-600 text-white rounded-md p-2 hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white rounded-md p-2 font-medium shadow-sm transition-colors hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:cursor-not-allowed"
                 onClick={handleSendOtp}
             >
-                Send OTP
+                {loading ? "Sending..." : "Send OTP"}
             </button>
+
 
             <div className="mt-6 text-center text-gray-700 text-sm">
                 <span>Don't have an account? </span>

@@ -1,4 +1,4 @@
-import AdminCard from "@/components/AdminCard";
+import AdminCard from "@/components/AdminDashboardCard";
 
 export default function AdminDashboard() {
     return <AdminCard />;

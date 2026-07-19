@@ -3,10 +3,12 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
+import { CompanyStatus } from '@prisma/client';
+import { GetCompanyDto } from './dto/get-company.dto';
 
 @Injectable()
 export class CompanyService {
-    constructor(private readonly prisma : PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
     // Create a new entry in company master
     async createCompany(dto: CreateCompanyDto) {
@@ -16,14 +18,14 @@ export class CompanyService {
         ]);
 
         // Both company code and company name must be unique in the table.
-        if(existingCode) {
+        if (existingCode) {
             throw new BadRequestException({
                 success: false,
                 message: "Company code already exists."
             });
         }
 
-        if(existingCompany) {
+        if (existingCompany) {
             throw new BadRequestException({
                 success: false,
                 message: "Company name already exists."
@@ -45,14 +47,14 @@ export class CompanyService {
         return {
             success: true,
             message: "Company created successfully.",
-        };  
+        };
     }
 
-    async updateCompany(companyCode : string, dto: UpdateCompanyDto) {
+    async updateCompany(companyCode: string, dto: UpdateCompanyDto) {
         const company = await this.prisma.company.findUnique({ where: { companyCode } });
 
         // If company to be updated not found
-        if(!company) {
+        if (!company) {
             throw new NotFoundException({
                 success: false,
                 message: "Company not found."
@@ -60,9 +62,9 @@ export class CompanyService {
         }
 
         // Prevent duplicate names
-        if(dto.companyName) {
+        if (dto.companyName) {
             const existing = await this.prisma.company.findFirst({
-                where: { 
+                where: {
                     companyName: dto.companyName,
                     NOT: {      // This allows company to keep its current name (we don't want to query the same original row)
                         companyCode: companyCode
@@ -70,7 +72,7 @@ export class CompanyService {
                 }
             });
 
-            if(existing) {
+            if (existing) {
                 throw new BadRequestException({
                     success: false,
                     message: "Company name already exists."
@@ -90,19 +92,37 @@ export class CompanyService {
         };
     }
 
-    async getCompanies() {
-        const companies = await this.prisma.company.findMany({ orderBy: { createdAt: "desc" } });
+    async getCompaniesAdmin(query: GetCompanyDto) {
+        const skip = (query.page - 1) * query.limit;
+
+        const [companies, total] = await this.prisma.$transaction([
+            this.prisma.company.findMany({
+                skip,
+                take: query.limit,
+                orderBy: {
+                    createdAt: "desc",
+                },
+            }),
+
+            this.prisma.company.count(),
+        ]);
 
         return {
             success: true,
-            companies
+            companies,
+            pagination: {
+                page: query.page,
+                limit: query.limit,
+                total,
+                totalPages: Math.ceil(total / query.limit),
+            },
         };
     }
 
-    async updateCompanyStatus(companyCode : string, dto : UpdateCompanyStatusDto) {
+    async updateCompanyStatus(companyCode: string, dto: UpdateCompanyStatusDto) {
         const company = await this.prisma.company.findUnique({ where: { companyCode } });
 
-        if(!company) {
+        if (!company) {
             throw new NotFoundException({
                 success: false,
                 message: "Company not found."
@@ -121,6 +141,49 @@ export class CompanyService {
         return {
             success: true,
             message: `Company marked as ${dto.status}.`
+        };
+    }
+
+    async getCompaniesClient(query: GetCompanyDto) {
+        const skip = (query.page - 1) * query.limit;
+        
+        const where = {
+            isActive: CompanyStatus.ACTIVE
+        }
+
+        const [companies, total] = await this.prisma.$transaction([
+            this.prisma.company.findMany({
+                where,
+                skip,
+                take: query.limit,
+                orderBy: {
+                    companyName: "asc",
+                },
+                select: {
+                    companyCode: true,
+                    companyName: true,
+                    companyLogo: true,
+                    companyUrl: true,
+                    shortNote: true,
+                    indicativePrice: true,
+                    minQty: true,
+                },
+            }),
+
+            this.prisma.company.count({
+                where,
+            }),
+        ]);
+
+        return {
+            success: true,
+            companies,
+            pagination: {
+                page: query.page,
+                limit: query.limit,
+                total,
+                totalPages: Math.ceil(total / query.limit),
+            },
         };
     }
 }

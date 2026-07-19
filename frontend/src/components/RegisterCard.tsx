@@ -1,138 +1,253 @@
-"use client"
+"use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
+import { apiFetch } from "@/utils/apiFetch";
 
 export default function RegisterCard() {
-    const [name, setName] = useState("");                   // State to hold name
-    const [email, setEmail] = useState("");                 // State to hold email
-    const [phoneNumber, setPhoneNumber] = useState("");     // State to hold phone number
-    const [loading, setLoading] = useState(true);           // State for loading status
-    const [error, setError] = useState("");                 // State for error messages from backend
-    const [success, setSuccess] = useState("");             // State for success messages from backend
+    const router = useRouter();
 
-    const router = useRouter();                             // Navigation hook to programmatically navigate between pages
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
 
-    // Runs when user clicks the "Register" button.
+    const [panNumber, setPanNumber] = useState("");
+    const [dematClientId, setDematClientId] = useState("");
+    const [dematDpId, setDematDpId] = useState("");
+
+    const [bankAccountNo, setBankAccountNo] = useState("");
+    const [ifscCode, setIfscCode] = useState("");
+    const [bankName, setBankName] = useState("");
+
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
+
     async function handleRegister() {
-        // Reset error and success messages, and set loading state
         setLoading(true);
         setError("");
         setSuccess("");
 
         try {
-            // Perform a POST request
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        "name": name,
-                        "phoneNumber": phoneNumber,
-                        "email": email,
-                    }),
-                }
-            );
+            const data = await apiFetch("/auth/register", {
+                method: "POST",
+                bodyData: {
+                    name,
+                    email,
+                    phoneNumber,
+                    panNumber,
+                    dematClientId,
+                    dematDpId,
+                    bankAccountNo,
+                    ifscCode,
+                    bankName,
+                },
+            });
 
-            // Parse the response from the backend
-            const data = await response.json();
+            setSuccess(data.message || "Registration successful!");
 
-            if (!response.ok) {
-                throw new Error(data.message);
-            }
+            await new Promise((resolve) => setTimeout(resolve, 5000));
 
-            // Success
-            setSuccess(data.message);
-            
-            // Wait for 1 second - UX design
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            // Route to login
             router.push("/login");
         }
-        catch (err) {
-            console.error(err);
-
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("Unable to connect to server");
-            }
+        catch (err: any) {
+            setError(err.message || "Unable to connect to server.");
         }
         finally {
             setLoading(false);
         }
     }
 
-    // Render the registration form UI
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 px-4">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-8">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 px-4 py-10">
+
+            <div className="w-full max-w-5xl rounded-2xl border border-gray-100 bg-white p-8 shadow-2xl">
+
                 <h1 className="text-3xl font-bold text-center text-gray-900">
                     Welcome!
                 </h1>
 
-                <p className="text-center text-gray-500 mt-2 mb-8">
+                <p className="mt-2 mb-8 text-center text-gray-500">
                     Create your account
                 </p>
 
-                <input
-                    className="w-full rounded-lg border border-gray-300 p-3 mb-4 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    placeholder="Enter your name"
-                    value={name}
-                    autoComplete="off"
-                    onChange={(e) => setName(e.target.value)}
-                />
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 
-                <input
-                    className="w-full rounded-lg border border-gray-300 p-3 mb-4 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    placeholder="Enter your email"
-                    value={email}
-                    autoComplete="off"
-                    onChange={(e) => setEmail(e.target.value)}
-                />
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Mobile Number
+                        </label>
 
-                <input
-                    className="w-full rounded-lg border border-gray-300 p-3 mb-6 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                    placeholder="Enter your phone number"
-                    value={phoneNumber}
-                    autoComplete="off"
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                />
+                        <input
+                            type="text"
+                            value={phoneNumber}
+                            autoComplete="off"
+                            placeholder="Enter your 10 digit mobile number"
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            value={email}
+                            autoComplete="off"
+                            placeholder="Enter your email"
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            PAN Number
+                        </label>
+
+                        <input
+                            type="text"
+                            value={panNumber}
+                            autoComplete="off"
+                            placeholder="Enter your PAN number"
+                            onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Full Name
+                        </label>
+
+                        <input
+                            type="text"
+                            value={name}
+                            autoComplete="off"
+                            placeholder="Enter your full name"
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Demat DP ID
+                        </label>
+
+                        <input
+                            type="text"
+                            value={dematDpId}
+                            autoComplete="off"
+                            placeholder="Enter your Demat DP ID"
+                            onChange={(e) => setDematDpId(e.target.value.toUpperCase())}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Demat Client ID
+                        </label>
+
+                        <input
+                            type="text"
+                            value={dematClientId}
+                            autoComplete="off"
+                            placeholder="Enter your Demat Client ID"
+                            onChange={(e) => setDematClientId(e.target.value.toUpperCase())}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Bank Account Number
+                        </label>
+
+                        <input
+                            type="text"
+                            value={bankAccountNo}
+                            autoComplete="off"
+                            placeholder="Enter your bank account number"
+                            onChange={(e) => setBankAccountNo(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            IFSC Code
+                        </label>
+
+                        <input
+                            type="text"
+                            value={ifscCode}
+                            autoComplete="off"
+                            placeholder="Enter IFSC code"
+                            onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                            Bank Name
+                        </label>
+
+                        <input
+                            type="text"
+                            value={bankName}
+                            autoComplete="off"
+                            placeholder="Enter your bank name"
+                            onChange={(e) => setBankName(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                </div>
 
                 <button
-                    className="w-full rounded-lg bg-blue-600 py-3 text-white font-semibold shadow-md transition duration-200 hover:bg-blue-700 hover:shadow-lg active:scale-[0.98]"
+                    disabled={loading}
                     onClick={handleRegister}
+                    className="mt-8 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
                 >
-                    Register
+                    {loading ? "Registering..." : "Register"}
                 </button>
 
                 {success && (
-                    <p className="mt-4 text-center text-sm font-medium text-green-600">
+                    <p className="mt-5 text-center text-sm font-medium text-green-600">
                         {success}
                     </p>
                 )}
 
                 {error && (
-                    <p className="mt-4 text-center text-sm font-medium text-red-600">
+                    <p className="mt-5 text-center text-sm font-medium text-red-600">
                         {error}
                     </p>
                 )}
 
                 <div className="mt-6 text-center text-gray-700">
                     <span>Already have an account? </span>
+
                     <Link
                         href="/login"
-                        className="font-semibold text-blue-600 hover:text-blue-800 hover:underline transition"
+                        className="font-semibold text-blue-600 transition hover:text-blue-800 hover:underline"
                     >
                         Login
                     </Link>
                 </div>
+
             </div>
+
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { OtpService } from './otp.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -9,12 +9,14 @@ import { SessionService } from './session.service';
 import type { Response } from "express";
 import { Request } from "express";
 import { Role, UserStatus } from '@prisma/client';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
     constructor(private readonly otpService: OtpService,
         private readonly sessionService: SessionService,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly emailService: EmailService
     ) { }
 
     // Request OTP backend
@@ -59,6 +61,13 @@ export class AuthService {
         else if (user) {
             role = Role.CLIENT;
             userId = user.id;
+
+            if(user.status !=  UserStatus.ACTIVE) {
+                throw new NotFoundException({
+                    success: false,
+                    message: "Account pending approval."
+                });
+            }
         }
         else {
             throw new BadRequestException({
@@ -71,6 +80,22 @@ export class AuthService {
         const otp = this.otpService.generateOtp();
         const challenge = this.otpService.generateChallenge();
         const expiry = new Date(Date.now() + 5 * 60 * 1000);     // 5 minutes
+
+        // Send OTP to user's email asynchronously (non-blocking)
+        try {
+            if (user) {
+                this.emailService.sendLoginOtp(user.email, otp).catch((err) => {
+                    console.error("Background OTP Email Delivery Failed:", err);
+                });
+            } else if (admin) {
+                this.emailService.sendLoginOtp(admin.email, otp).catch((err) => {
+                    console.error("Background OTP Email Delivery Failed:", err);
+                });
+            }
+        } catch (error) {
+            // Note: This catch block will now only catch synchronous failures (like missing configuration parameters)
+            throw new InternalServerErrorException("Unable to initiate OTP process.");
+        }
 
         // Invalidate all previous OTPs for this user, so that only the latest OTP is valid
         await this.prisma.otpLog.updateMany({
@@ -95,9 +120,6 @@ export class AuthService {
                 role: role
             },
         });
-
-        console.log("Phone: ", dto.phoneNumber);
-        console.log("Generated OTP: ", otp);
 
         // The frontend sends { challenge key + OTP }, not { phoneNumber + OTP },
         // as it's more secure to send a key, one can easily tamper phone number
@@ -259,14 +281,23 @@ export class AuthService {
             data: {
                 name: dto.name,
                 phoneNumber: dto.phoneNumber,
-                email: dto.email
+                email: dto.email,
+
+                panNumber: dto.panNumber?.toUpperCase(),
+                dematClientId: dto.dematClientId?.toUpperCase(),
+                dematDpId: dto.dematDpId?.toUpperCase(),
+
+                bankAccountNo: dto.bankAccountNo,
+
+                ifscCode: dto.ifscCode?.toUpperCase(),
+                bankName: dto.bankName,
             }
         });
 
         // Return a success JSON
         return {
             success: true,
-            message: "Registration successful."
+            message: "Registration successful. We'll contact you for activation."
         }
     }
 

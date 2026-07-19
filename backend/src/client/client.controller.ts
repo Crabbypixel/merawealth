@@ -6,9 +6,4 @@ import { ClientService } from './client.service';
 @Controller("client")
 export class ClientController {
     constructor(private readonly clientService : ClientService) {}
-
-    @Get("/companies")
-    getCompanies() {
-        return this.clientService.getCompanies();
-    }
 }

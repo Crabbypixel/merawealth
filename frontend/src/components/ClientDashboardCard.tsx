@@ -1,11 +1,12 @@
 "use client";
 
-import { Ruthie } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import TradePage from "./TradePage";
+import TransactionHistoryPage from "./TransactionHistoryPage";
+import { apiFetch } from "@/utils/apiFetch";
 
-// Upon login, the backend sends the user data in the response.
-// This interface defines the structure of that user data.
+// Structure of user data received from the authentication profile route.
 interface User {
     name: string;
     email: string;
@@ -17,56 +18,48 @@ export default function DashboardCard() {
     const [loading, setLoading] = useState(true);               // State for loading status, true while fetching user data, false once fetched
     const [error, setError] = useState("");                     // State for error messages
     const [role, setRole] = useState("unknown");
+    const [selectedPage, setSelectedPage] = useState("trade");
 
     const router = useRouter();                                 // Navigation hook to programmatically navigate between pages
 
+    // Centralized route and notification mapper for this component
+    function handleError(err: any, fallbackMessage: string) {
+        if (err.message === "session_ended") {
+            const redirectReason = err.reason || "expired";
+            router.push(`/session-ended?reason=${redirectReason}`);
+            return;
+        }
+        console.error(err);
+        setError(err.message || fallbackMessage);
+    }
+
     // Fetch the authenticated user's profile when the dashboard first mounts.
-    // If the session is invalid or expired, redirect to the session-ended page.
     useEffect(() => {
-        // Handle fetch request to get logged-in user profile
         async function fetchUser() {
             try {
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-                    {
-                        credentials: "include",     // Include cookies to maintain session
-                    }
-                );
+                setLoading(true);
+                setError("");
+                
+                const data = await apiFetch("/auth/me");
 
-                if (response.status === 401) {
-                    router.push("/session-ended?reason=expired");
-                    return;
-                }
-                if (response.status === 403) {
-                    const data = await response.json();
-                    router.push(`/session-ended?reason=${data.status.toLowerCase()}`);
+                // Route alternative lifecycle states to session layouts
+                if (data.user?.status && data.user.status !== "ACTIVE") {
+                    router.push(`/session-ended?reason=${data.user.status.toLowerCase()}`);
                     return;
                 }
 
-                if (!response.ok) {
-                    setError("Something went wrong.");
+                // Protect interface from unauthorized admin access routing loops
+                if (data.role !== "CLIENT") {
+                    router.replace("/admin");
                     return;
                 }
 
-                // If response is valid, parse user data
-                if (response.ok) {
-                    const data = await response.json();
-
-                    if (data.role !== "CLIENT") {
-                        router.replace("/admin");
-                        return;
-                    }
-
-                    setUser(data.user);
-                    setRole(data.role);
-                } else {
-                    // Else session is expired
-                    router.push("/session-ended?reason=expired");   // Session expired with reason - expired
-                }
-            } catch {
-                setError("Unable to connect to the server.");
+                setUser(data.user);
+                setRole(data.role);
+            } catch (err) {
+                handleError(err, "Unable to connect to the server.");
             } finally {
-                setLoading(false);          // Finish loading
+                setLoading(false);
             }
         }
 
@@ -75,15 +68,12 @@ export default function DashboardCard() {
 
     // Handle user logout, send a POST request to the backend to terminate the session.
     async function handleLogout() {
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
-            {
-                method: "POST",
-                credentials: "include",
-            }
-        );
-
-        if (response.ok) {
+        try {
+            await apiFetch("/auth/logout", { method: "POST" });
+            router.push("/session-ended?reason=logout");
+        } catch (err) {
+            console.error("Logout request failed:", err);
+            // Fallback strategy: Force interface route reset on client failure
             router.push("/session-ended?reason=logout");
         }
     }
@@ -141,26 +131,37 @@ export default function DashboardCard() {
 
             </header>
 
+            <nav className="bg-white border-b px-8 py-3 flex justify-center gap-4">
+
+                <button
+                    onClick={() => setSelectedPage("trade")}
+                    className={`px-3 py-1.5 rounded-md text-sm transition-colors font-medium ${selectedPage === "trade"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                >
+                    Buy / Sell Shares
+                </button>
+
+                <button
+                    onClick={() => setSelectedPage("history")}
+                    className={`px-3 py-1.5 rounded-md text-sm transition-colors font-medium ${selectedPage === "history"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                >
+                    Transaction History
+                </button>
+
+            </nav>
+
             {/* Main Dashboard Area */}
             <main className="p-8">
 
-                {loading && (
-                    <p className="text-gray-600">
-                        Loading...
-                    </p>
-                )}
-
-                {!loading && error && (
-                    <p className="text-red-600">
-                        {error}
-                    </p>
-                )}
-
-                {!loading && !error && (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg h-[80vh]">
-
-                    </div>
-                )}
+                <main className="p-8">
+                    {selectedPage === "trade" && <TradePage />}
+                    {selectedPage === "history" && <TransactionHistoryPage />}
+                </main>
 
             </main>
 
