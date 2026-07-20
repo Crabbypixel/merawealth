@@ -5,7 +5,7 @@ interface FetchOptions extends RequestInit {
 
 export async function apiFetch(endpoint: string, options: FetchOptions = {}) {
     const { bodyData, ...customConfig } = options;
-    
+
     const config: RequestInit = {
         credentials: "include",
         ...customConfig,
@@ -34,7 +34,7 @@ export async function apiFetch(endpoint: string, options: FetchOptions = {}) {
         if (response.status === 401 || response.status === 403) {
             // Check if backend attached a specific account lifecycle status message
             const backendReason = errorData?.reason?.toLowerCase() || errorData?.message?.toLowerCase();
-            
+
             let queryReason = "expired";
             if (backendReason?.includes("pending")) queryReason = "pending";
             else if (backendReason?.includes("rejected")) queryReason = "rejected";
@@ -47,8 +47,9 @@ export async function apiFetch(endpoint: string, options: FetchOptions = {}) {
         }
 
         const backendMessage = errorData?.message;
-        const formattedMessage = Array.isArray(backendMessage) 
-            ? backendMessage.join(", ") 
+
+        const formattedMessage = Array.isArray(backendMessage)
+            ? backendMessage.join("\n")
             : backendMessage;
 
         const error = new Error(formattedMessage || `Request failed with status ${response.status}`);

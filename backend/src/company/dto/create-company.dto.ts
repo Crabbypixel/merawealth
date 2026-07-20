@@ -14,10 +14,6 @@ export class CreateCompanyDto {
     companyName: string;
 
     @IsOptional()
-    @IsString()
-    companyLogo?: string;
-
-    @IsOptional()
     @IsUrl()
     companyUrl?: string;
 

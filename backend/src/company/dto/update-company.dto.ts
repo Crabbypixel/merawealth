@@ -17,7 +17,7 @@ export class UpdateCompanyDto {
 
     @IsOptional()
     @Type(() => Number)
-    @IsNumber({ maxDecimalPlaces: 2})
+    @IsNumber({ maxDecimalPlaces: 2 })
     @Min(0)
     indicativePrice?: number;
 
@@ -26,4 +26,9 @@ export class UpdateCompanyDto {
     @IsNumber()
     @Min(1)
     minQty?: number;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    shortNote?: string;
 }

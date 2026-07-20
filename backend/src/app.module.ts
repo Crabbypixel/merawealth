@@ -10,23 +10,29 @@ import { AdminModule } from './admin/admin.module';
 import { CompanyModule } from './company/company.module';
 import { ClientModule } from './client/client.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { ServeStaticModule } from "@nestjs/serve-static";
+import { join } from "path";
 
 @Module({
   imports: [
-    AuthModule, 
+    AuthModule,
     PrismaModule,
     TasksModule,
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), "uploads"),
+      serveRoot: "/uploads",
+    }),
     AdminModule,
     CompanyModule,
     ClientModule,
     TransactionModule
   ],
-  
+
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

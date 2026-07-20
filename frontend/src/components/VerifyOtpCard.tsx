@@ -95,7 +95,7 @@ export default function VerifyOtpCard() {
                 </h1>
 
                 <p className="text-center text-gray-500 mb-6">
-                    Enter the OTP sent to your registered number.
+                    Enter the OTP sent to your registered email.
                 </p>
 
                 <input

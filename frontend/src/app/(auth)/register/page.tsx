@@ -1,5 +1,10 @@
 import RegisterCard from "@/components/RegisterCard";
+import Footer from "@/components/Footer";
 
 export default function Register() {
-    return <RegisterCard />;
+    return (
+        <div>
+            <RegisterCard />
+        </div>
+    );
 }

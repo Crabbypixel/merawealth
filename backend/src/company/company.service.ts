@@ -5,13 +5,16 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
 import { CompanyStatus } from '@prisma/client';
 import { GetCompanyDto } from './dto/get-company.dto';
+import { GetCompaniesDto } from './dto/get-companies.dto';
+import { join } from 'path';
+import { existsSync, unlinkSync } from 'fs';
 
 @Injectable()
 export class CompanyService {
     constructor(private readonly prisma: PrismaService) { }
 
     // Create a new entry in company master
-    async createCompany(dto: CreateCompanyDto) {
+    async createCompany(dto: CreateCompanyDto, logo: Express.Multer.File) {
         const [existingCode, existingCompany] = await Promise.all([
             this.prisma.company.findUnique({ where: { companyCode: dto.companyCode } }),
             this.prisma.company.findFirst({ where: { companyName: dto.companyName } })
@@ -36,7 +39,7 @@ export class CompanyService {
             data: {
                 companyCode: dto.companyCode,
                 companyName: dto.companyName,
-                companyLogo: dto.companyLogo ?? "",
+                companyLogo: logo.filename,
                 companyUrl: dto.companyUrl,
                 shortNote: dto.shortNote,
                 indicativePrice: dto.indicativePrice,
@@ -50,7 +53,7 @@ export class CompanyService {
         };
     }
 
-    async updateCompany(companyCode: string, dto: UpdateCompanyDto) {
+    async updateCompany(companyCode: string, dto: UpdateCompanyDto, logo: Express.Multer.File) {
         const company = await this.prisma.company.findUnique({ where: { companyCode } });
 
         // If company to be updated not found
@@ -80,10 +83,34 @@ export class CompanyService {
             }
         }
 
+        // Prepare update data
+        const updateData: UpdateCompanyDto = {
+            ...dto
+        };
+
+        // If new logo was uploaded
+        if(logo)
+        {
+            // Delete the previous logo
+            if(company.companyLogo) {
+                const oldLogoPath = join(process.cwd(), "uploads", "company-logos", company.companyLogo);
+
+                if(existsSync(oldLogoPath)) {
+                    try {
+                        unlinkSync(oldLogoPath);
+                    } catch(err) {
+                        console.error("Failed to delete old path.");
+                    }
+                }
+            }
+
+            updateData.companyLogo = logo.filename;
+        }
+
         // Update
         await this.prisma.company.update({
             where: { companyCode },
-            data: dto
+            data: updateData
         });
 
         return {
@@ -146,7 +173,7 @@ export class CompanyService {
 
     async getCompaniesClient(query: GetCompanyDto) {
         const skip = (query.page - 1) * query.limit;
-        
+
         const where = {
             isActive: CompanyStatus.ACTIVE
         }
@@ -186,4 +213,78 @@ export class CompanyService {
             },
         };
     }
+
+    async getCompany(companyCode: string) {
+        const company = await this.prisma.company.findUnique({
+            where: {
+                companyCode
+            },
+            select: {
+                companyCode: true,
+                companyName: true,
+                companyLogo: true,
+                companyUrl: true,
+                shortNote: true,
+                indicativePrice: true,
+                minQty: true,
+                isActive: true,
+            }
+        });
+
+        if(!company) {
+            throw new NotFoundException({
+                success: false,
+                message: "Company not found."
+            });
+        }
+
+        return {
+            success: true,
+            company
+        };
+    }
+
+    async getCompaniesPublic(dto: GetCompaniesDto) {
+        const { page, limit } = dto;
+
+        const where = {
+            isActive: CompanyStatus.ACTIVE,
+        };
+
+        const [companies, total] = await this.prisma.$transaction([
+            this.prisma.company.findMany({
+                where,
+                skip: (page - 1) * limit,
+                take: limit,
+                orderBy: {
+                    companyName: "asc",
+                },
+                select: {
+                    companyCode: true,
+                    companyName: true,
+                    companyLogo: true,
+                    companyUrl: true,
+                    shortNote: true,
+                    indicativePrice: true,
+                    minQty: true,
+                },
+            }),
+
+            this.prisma.company.count({
+                where,
+            }),
+        ]);
+
+        return {
+            success: true,
+            companies,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
 }

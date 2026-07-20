@@ -24,7 +24,7 @@ export class EmailService {
             );
     }
 
-    async sendLoginOtp(email: string, otp: number) {
+    async sendLoginOtp(email: string, otp: number) {      
         await this.transporter.sendMail({
             from: `"MeraWealth" <${process.env.EMAIL_USER}>`,
             to: email,

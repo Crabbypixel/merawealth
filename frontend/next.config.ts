@@ -3,8 +3,17 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     reactCompiler: true,
     allowedDevOrigins: [
-        "3.109.232.12",
+        "crabbyfeet.online",
     ],
+    images: {
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "crabbyfeet.online",
+                pathname: "/api/uploads/**",
+            },
+        ],
+    },
 };
 
 export default nextConfig;

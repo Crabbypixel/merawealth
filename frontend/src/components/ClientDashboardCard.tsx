@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import TradePage from "./TradePage";
 import TransactionHistoryPage from "./TransactionHistoryPage";
 import { apiFetch } from "@/utils/apiFetch";
+import { Menu, X, CircleUser } from "lucide-react";
 
 // Structure of user data received from the authentication profile route.
 interface User {
@@ -19,6 +20,7 @@ export default function DashboardCard() {
     const [error, setError] = useState("");                     // State for error messages
     const [role, setRole] = useState("unknown");
     const [selectedPage, setSelectedPage] = useState("trade");
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const router = useRouter();                                 // Navigation hook to programmatically navigate between pages
 
@@ -39,7 +41,7 @@ export default function DashboardCard() {
             try {
                 setLoading(true);
                 setError("");
-                
+
                 const data = await apiFetch("/auth/me");
 
                 // Route alternative lifecycle states to session layouts
@@ -99,72 +101,124 @@ export default function DashboardCard() {
 
     // Render the main dashboard UI once user data is fetched and there are no errors.
     return (
-        <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100">
 
-            {/* Top Navigation Bar */}
-            <header className="flex items-center justify-end bg-white shadow px-8 py-4">
+        {/* Header */}
+        <header className="border-b bg-white shadow-sm">
+            <div className="mx-auto flex items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
 
-                <div className="flex items-center gap-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        Dashboard
+                    </h1>
+
+                    <p className="text-sm text-gray-500">
+                        Manage your investments
+                    </p>
+                </div>
+
+                {/* Desktop User Info */}
+                <div className="hidden items-center gap-6 md:flex">
 
                     <div className="text-right">
-                        <h1 className="text-lg font-semibold text-gray-800">
-                            Hello, {user?.name}
-                        </h1>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                            {user?.name}
+                        </h2>
 
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm text-gray-600">
                             {user?.email}
                         </p>
 
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs uppercase tracking-wide text-gray-500">
                             {role}
                         </p>
                     </div>
 
                     <button
                         onClick={handleLogout}
-                        className="bg-red-600 text-white px-4 py-1.5 rounded-md text-sm hover:bg-red-700 transition-colors"
+                        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
                     >
                         Logout
                     </button>
 
                 </div>
 
-            </header>
+                {/* Mobile Menu Button */}
+                <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="rounded-md p-2 text-slate-700 md:hidden"
+                >
+                    <CircleUser size={28} />
+                </button>
 
-            <nav className="bg-white border-b px-8 py-3 flex justify-center gap-4">
+            </div>
+
+            {/* Mobile User Menu */}
+            {menuOpen && (
+                <div className="border-t bg-white md:hidden">
+                    <div className="space-y-4 px-4 py-4">
+
+                        <div>
+                            <h2 className="font-semibold text-gray-900">
+                                {user?.name}
+                            </h2>
+
+                            <p className="text-sm text-gray-600">
+                                {user?.email}
+                            </p>
+
+                            <p className="text-xs uppercase tracking-wide text-gray-500">
+                                {role}
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={handleLogout}
+                            className="w-full rounded-lg bg-red-600 px-4 py-3 text-sm font-medium text-white hover:bg-red-700"
+                        >
+                            Logout
+                        </button>
+
+                    </div>
+                </div>
+            )}
+        </header>
+
+        {/* Navigation */}
+        <nav className="border-b bg-white">
+            <div className="flex flex-wrap justify-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
 
                 <button
                     onClick={() => setSelectedPage("trade")}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-colors font-medium ${selectedPage === "trade"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                    className={`rounded-lg px-5 py-2.5 text-sm font-medium transition ${
+                        selectedPage === "trade"
+                            ? "bg-blue-600 text-white shadow"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                 >
                     Buy / Sell Shares
                 </button>
 
                 <button
                     onClick={() => setSelectedPage("history")}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-colors font-medium ${selectedPage === "history"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                    className={`rounded-lg px-5 py-2.5 text-sm font-medium transition ${
+                        selectedPage === "history"
+                            ? "bg-blue-600 text-white shadow"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                 >
                     Transaction History
                 </button>
 
-            </nav>
+            </div>
+        </nav>
 
-            {/* Main Dashboard Area */}
-            <main className="p-8">
+        {/* Main Content */}
+        <main className="p-4 sm:p-6 lg:p-8">
+            {selectedPage === "trade" && <TradePage />}
+            {selectedPage === "history" && <TransactionHistoryPage />}
+        </main>
 
-                <main className="p-8">
-                    {selectedPage === "trade" && <TradePage />}
-                    {selectedPage === "history" && <TransactionHistoryPage />}
-                </main>
-
-            </main>
-
-        </div>
-    );
+    </div>
+);
 }

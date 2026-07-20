@@ -111,7 +111,7 @@ export default function TransactionHistoryPage() {
 
     return (
         <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-5 flex items-center justify-between">
+            <div className="mb-5 hidden items-center justify-between md:flex">
                 <h2 className="text-xl font-semibold text-gray-900">
                     Transaction History
                 </h2>
@@ -155,6 +155,13 @@ export default function TransactionHistoryPage() {
                 </div>
             </div>
 
+            {/* Mobile Header */}
+            <div className="mb-5 md:hidden">
+                <h2 className="text-center text-xl font-semibold text-gray-900">
+                    Transaction History
+                </h2>
+            </div>
+
             {loading ? (
                 <p className="text-gray-600">
                     Loading transactions...
@@ -168,113 +175,258 @@ export default function TransactionHistoryPage() {
                     No transactions found.
                 </p>
             ) : (
-                <div className="overflow-hidden rounded-lg border border-gray-200">
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50">
-                                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Company
-                                </th>
+                <>
+                    <div className="hidden overflow-hidden rounded-lg border border-gray-200 md:block">
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50">
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Company
+                                    </th>
 
-                                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Type
-                                </th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Type
+                                    </th>
 
-                                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Qty
-                                </th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Qty
+                                    </th>
 
-                                <th className="w-32 px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Share Price
-                                </th>
-                                <th className="w-32 px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Total
-                                </th>
+                                    <th className="w-32 px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Share Price
+                                    </th>
+                                    <th className="w-32 px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Total
+                                    </th>
 
-                                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Status
-                                </th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Status
+                                    </th>
 
-                                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Ordered On
-                                </th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Ordered On
+                                    </th>
 
-                                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Action
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {transactions.map((transaction) => (
-                                <tr
-                                    key={transaction.id}
-                                    className="border-t border-gray-100 hover:bg-blue-100 transition-colors"
-                                >
-                                    <td className="px-5 py-4">
-                                        <div className="text-base font-bold text-black">
-                                            {transaction.company.companyName}
-                                        </div>
-
-                                        <div className="text-sm text-gray-700">
-                                            {transaction.company.companyCode}
-                                        </div>
-                                    </td>
-
-                                    <td className="px-5 py-4">
-                                        <span
-                                            className={`font-semibold ${transaction.type === "BUY"
-                                                ? "text-green-700"
-                                                : "text-red-700"
-                                                }`}
-                                        >
-                                            {transaction.type}
-                                        </span>
-                                    </td>
-
-                                    <td className="px-5 py-4 text-gray-900 font-medium">
-                                        {transaction.quantity.toLocaleString("en-IN")}
-                                    </td>
-
-                                    <td className="w-32 px-5 py-4 text-right font-semibold text-gray-900">
-                                        ₹{Number(transaction.priceAtOrder).toLocaleString("en-IN")}
-                                    </td>
-
-                                    <td className="w-32 px-5 py-4 text-right font-semibold text-gray-900">
-                                        ₹{Number(transaction.totalAmount).toLocaleString("en-IN")}
-                                    </td>
-
-                                    <td className="px-5 py-4">
-                                        <span
-                                            className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusColor(
-                                                transaction.status
-                                            )}`}
-                                        >
-                                            {transaction.status.replaceAll("_", " ")}
-                                        </span>
-                                    </td>
-
-                                    <td className="px-5 py-4 text-gray-800">
-                                        {formatDate(transaction.createdAt)}
-                                    </td>
-
-                                    <td className="px-5 py-4">
-                                        <button
-                                            disabled={transaction.status !== "PENDING"}
-                                            className={`px-3 py-1 rounded text-white font-medium ${transaction.status === "PENDING"
-                                                ? "bg-red-600 hover:bg-red-700"
-                                                : "bg-gray-400 cursor-not-allowed"
-                                                }`}
-                                            onClick={() => cancelTransaction(transaction.id)}
-                                        >
-                                            CANCEL
-                                        </button>
-                                    </td>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Action
+                                    </th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+
+                            <tbody>
+                                {transactions.map((transaction) => (
+                                    <tr
+                                        key={transaction.id}
+                                        className="border-t border-gray-100 hover:bg-blue-100 transition-colors"
+                                    >
+                                        <td className="px-5 py-4">
+                                            <div className="text-base font-bold text-black">
+                                                {transaction.company.companyName}
+                                            </div>
+
+                                            <div className="text-sm text-gray-700">
+                                                {transaction.company.companyCode}
+                                            </div>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <span
+                                                className={`font-semibold ${transaction.type === "BUY"
+                                                    ? "text-blue-700"
+                                                    : "text-red-700"
+                                                    }`}
+                                            >
+                                                {transaction.type}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4 text-gray-900 font-medium">
+                                            {transaction.quantity.toLocaleString("en-IN")}
+                                        </td>
+
+                                        <td className="w-32 px-5 py-4 text-right font-semibold text-gray-900">
+                                            ₹{Number(transaction.priceAtOrder).toLocaleString("en-IN")}
+                                        </td>
+
+                                        <td className="w-32 px-5 py-4 text-right font-semibold text-gray-900">
+                                            ₹{Number(transaction.totalAmount).toLocaleString("en-IN")}
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <span
+                                                className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusColor(
+                                                    transaction.status
+                                                )}`}
+                                            >
+                                                {transaction.status.replaceAll("_", " ")}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4 text-gray-800">
+                                            {formatDate(transaction.createdAt)}
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <button
+                                                disabled={transaction.status !== "PENDING"}
+                                                className={`px-3 py-1 rounded text-white font-medium ${transaction.status === "PENDING"
+                                                    ? "bg-red-600 hover:bg-red-700"
+                                                    : "bg-gray-400 cursor-not-allowed"
+                                                    }`}
+                                                onClick={() => cancelTransaction(transaction.id)}
+                                            >
+                                                CANCEL
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="space-y-4 md:hidden">
+                        {transactions.map((transaction) => (
+                            <div
+                                key={transaction.id}
+                                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                            >
+                                {/* Company */}
+                                <div>
+                                    <h3 className="break-words text-lg font-bold text-slate-900">
+                                        {transaction.company.companyName}
+                                    </h3>
+
+                                    <p className="text-sm text-slate-500">
+                                        {transaction.company.companyCode}
+                                    </p>
+                                </div>
+
+                                {/* Type & Status */}
+                                <div className="mt-4 flex items-center justify-between">
+                                    <span
+                                        className={`rounded-full px-3 py-1 text-sm font-semibold ${transaction.type === "BUY"
+                                            ? "bg-blue-100 text-blue-700"
+                                            : "bg-red-100 text-red-700"
+                                            }`}
+                                    >
+                                        {transaction.type}
+                                    </span>
+
+                                    <span
+                                        className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusColor(
+                                            transaction.status
+                                        )}`}
+                                    >
+                                        {transaction.status.replaceAll("_", " ")}
+                                    </span>
+
+                                </div>
+
+                                {/* Details */}
+                                <div className="mt-5 rounded-lg bg-slate-50 p-3">
+                                    <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4">
+
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">
+                                                Quantity
+                                            </p>
+
+                                            <p className="font-semibold text-slate-900">
+                                                {transaction.quantity.toLocaleString("en-IN")}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">
+                                                Share Price
+                                            </p>
+
+                                            <p className="font-semibold text-slate-900">
+                                                ₹{Number(transaction.priceAtOrder).toLocaleString("en-IN")}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">
+                                                Total
+                                            </p>
+
+                                            <p className="font-bold text-slate-900">
+                                                ₹{Number(transaction.totalAmount).toLocaleString("en-IN")}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">
+                                                Ordered On
+                                            </p>
+
+                                            <p className="font-medium text-slate-900">
+                                                {formatDate(transaction.createdAt)}
+                                            </p>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                {/* Cancel Button */}
+                                <div className="mt-5">
+
+                                    <button
+                                        disabled={transaction.status !== "PENDING"}
+                                        onClick={() => cancelTransaction(transaction.id)}
+                                        className={`w-full rounded-lg py-2.5 font-medium text-white ${transaction.status === "PENDING"
+                                            ? "bg-red-600 hover:bg-red-700"
+                                            : "bg-gray-400 cursor-not-allowed"
+                                            }`}
+                                    >
+                                        Cancel Order
+                                    </button>
+
+                                </div>
+
+                            </div>
+                        ))}
+
+                        <div className="mt-6 flex flex-col items-center gap-4 md:hidden">
+
+                            <span className="text-sm font-medium text-slate-600">
+                                Page {pagination.page} of {pagination.totalPages}
+                            </span>
+
+                            <div className="flex w-full gap-3">
+
+                                <button
+                                    disabled={pagination.page === 1 || loading}
+                                    onClick={() => fetchUserTransactions(pagination.page - 1)}
+                                    className="flex-1 rounded-md border border-slate-300 bg-slate-100 px-4 py-2 font-medium text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    ← Previous
+                                </button>
+
+                                <button
+                                    disabled={
+                                        pagination.page === pagination.totalPages ||
+                                        loading
+                                    }
+                                    onClick={() => fetchUserTransactions(pagination.page + 1)}
+                                    className="flex-1 rounded-md border border-slate-300 bg-slate-100 px-4 py-2 font-medium text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Next →
+                                </button>
+
+                            </div>
+
+                            <button
+                                disabled={loading}
+                                onClick={() => fetchUserTransactions(pagination.page)}
+                                className="w-full rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:bg-slate-400"
+                            >
+                                Refresh
+                            </button>
+
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );

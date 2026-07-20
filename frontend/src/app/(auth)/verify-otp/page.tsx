@@ -1,5 +1,10 @@
 import VerifyOtpCard from "@/components/VerifyOtpCard";
+import Footer from "@/components/Footer";
 
 export default function VerifyOtpPage() {
-    return <VerifyOtpCard />;
+    return (
+        <div>
+            <VerifyOtpCard />
+        </div>
+    );
 }
