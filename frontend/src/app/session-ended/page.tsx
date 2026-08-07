@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import SessionEndedCard from "@/components/SessionEndedCard";
 
 export default function SessionEndedPage() {
     return (
         <div>
-            <SessionEndedCard />
+            <Suspense fallback={null}>
+                <SessionEndedCard />
+            </Suspense>
         </div>
     );
 }
