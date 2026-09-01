@@ -10,7 +10,7 @@ export default function Home() {
         <section className="bg-white">
             <div className="relative">
                 <img
-                    src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/public/pre_ipo_banner.png`}
+                    src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/public/merawealth_banner.png`}
                     alt="MeraWealth Banner"
                     className="block w-full"
                 />

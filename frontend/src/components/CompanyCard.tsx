@@ -6,6 +6,7 @@ type CompanyCardProps = {
     logo: string;
     companyCode: string;
     companyName: string;
+    companyUrl: string;
     description: string;
     indicativePrice: number;
     minQty: number;
@@ -15,6 +16,7 @@ export default function CompanyCard({
     logo,
     companyCode,
     companyName,
+    companyUrl,
     description,
     indicativePrice,
     minQty,
@@ -64,10 +66,12 @@ export default function CompanyCard({
                     </div>
 
                     <Link
-                        href={`/pre-ipo/${companyCode}`}
+                        href={companyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="mt-6 inline-block rounded-lg bg-blue-600 px-5 py-2 text-white transition hover:bg-blue-700"
                     >
-                        View Details
+                        Visit Site
                     </Link>
 
                 </div>

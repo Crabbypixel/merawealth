@@ -1,3 +1,5 @@
+import Link from "next/dist/client/link";
+
 export default function Footer() {
     return (
         <footer className="border-t border-slate-200 bg-slate-50">
@@ -28,18 +30,16 @@ export default function Footer() {
                     <div>
 
                         <h3 className="mb-4 text-lg font-semibold text-slate-900">
-                            Federal Capital Markets Limited
+                            MeraWealth
                         </h3>
 
                         <div className="space-y-2 text-slate-600">
 
-                            <p>Federal House</p>
-                            <p>171, 5th Cross, RIFCO-Shantiniketan Layout</p>
-                            <p>Bhattarahalli, KR Puram</p>
-                            <p>Bengaluru - 560049</p>
+                            <p>36, M M 1st Street,</p>
+                            <p>Vadapalani, Chennai-26</p>
 
                             <p className="pt-2">
-                                info@merawealth.in
+                                Mail: info@merawealth.in
                             </p>
 
                         </div>
@@ -56,33 +56,48 @@ export default function Footer() {
                         <ul className="space-y-2">
 
                             <li>
-                                <a href="#" className="text-slate-600 hover:text-blue-600">
+                                <Link
+                                    href="/about-us"
+                                    className="text-slate-600 hover:text-blue-600"
+                                >
                                     About Us
-                                </a>
+                                </Link>
                             </li>
 
                             <li>
-                                <a href="#" className="text-slate-600 hover:text-blue-600">
-                                    Career
-                                </a>
+                                <Link
+                                    href="/process-flow"
+                                    className="text-slate-600 hover:text-blue-600"
+                                >
+                                    Process Flow
+                                </Link>
                             </li>
 
                             <li>
-                                <a href="#" className="text-slate-600 hover:text-blue-600">
+                                <Link
+                                    href="/services"
+                                    className="text-slate-600 hover:text-blue-600"
+                                >
                                     Services
-                                </a>
+                                </Link>
                             </li>
 
                             <li>
-                                <a href="#" className="text-slate-600 hover:text-blue-600">
+                                <Link
+                                    href="/privacy-policy"
+                                    className="text-slate-600 hover:text-blue-600"
+                                >
                                     Privacy Policy
-                                </a>
+                                </Link>
                             </li>
 
                             <li>
-                                <a href="#" className="text-slate-600 hover:text-blue-600">
+                                <Link
+                                    href="/disclaimer"
+                                    className="text-slate-600 hover:text-blue-600"
+                                >
                                     Disclaimer
-                                </a>
+                                </Link>
                             </li>
 
                         </ul>
@@ -99,9 +114,9 @@ export default function Footer() {
                         <ul className="space-y-2">
 
                             <li>
-                                <a href="https://www.bseindia.com" target="_blank" className="text-slate-600 hover:text-blue-600">
+                                <Link href="https://www.bseindia.com" target="_blank" className="text-slate-600 hover:text-blue-600">
                                     BSE
-                                </a>
+                                </Link>
                             </li>
 
                             <li>

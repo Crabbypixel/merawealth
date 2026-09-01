@@ -62,7 +62,7 @@ export class AuthService {
             role = Role.CLIENT;
             userId = user.id;
 
-            if(user.status !=  UserStatus.ACTIVE) {
+            if (user.status != UserStatus.ACTIVE) {
                 throw new NotFoundException({
                     success: false,
                     message: "Account pending approval."
@@ -84,11 +84,11 @@ export class AuthService {
         // Send OTP to user's email asynchronously (non-blocking)
         try {
             if (user) {
-                this.emailService.sendLoginOtp(user.email, otp).catch((err) => {
+                this.emailService.sendLoginOtp(user.email, otp, false).catch((err) => {
                     console.error("Background OTP Email Delivery Failed:", err);
                 });
             } else if (admin) {
-                this.emailService.sendLoginOtp(admin.email, otp).catch((err) => {
+                this.emailService.sendLoginOtp(admin.email, otp, true).catch((err) => {
                     console.error("Background OTP Email Delivery Failed:", err);
                 });
             }
@@ -222,7 +222,7 @@ export class AuthService {
         // Send a cookie
         res.cookie("session", sessionToken, {
             httpOnly: true,
-            secure: false,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
@@ -329,7 +329,7 @@ export class AuthService {
                 user: {
                     id: session.admin.id,
                     name: session.admin.name,
-                    email: "admin.email@merawealth.com",
+                    email: session.admin.email,
                     phoneNumber: session.admin.phoneNumber
                 },
                 role: session.role

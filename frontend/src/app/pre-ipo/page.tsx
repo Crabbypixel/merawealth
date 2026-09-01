@@ -9,6 +9,7 @@ type Company = {
     companyCode: string;
     companyName: string;
     companyLogo: string | null;
+    companyUrl: string | null;
     shortNote: string;
     indicativePrice: number;
     minQty: number;
@@ -52,7 +53,7 @@ export default function PreIPOPage() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [pagination, setPagination] = useState<Pagination>({
         page: 1,
-        limit: 5,
+        limit: 25,
         total: 0,
         totalPages: 1,
     });
@@ -86,7 +87,7 @@ export default function PreIPOPage() {
             setLoading(true);
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/companies?page=${page}&limit=5`
+                `${process.env.NEXT_PUBLIC_API_URL}/companies?page=${page}&limit=25`
             );
 
             const data = await response.json();
@@ -175,6 +176,7 @@ export default function PreIPOPage() {
                                     }
                                     companyCode={company.companyCode}
                                     companyName={company.companyName}
+                                    companyUrl={company.companyUrl || "#"}
                                     description={company.shortNote}
                                     indicativePrice={company.indicativePrice}
                                     minQty={company.minQty}
@@ -182,6 +184,31 @@ export default function PreIPOPage() {
                             ))
                         )}
                     </div>
+
+                    {/* Pagination */}
+                    {(
+                        <div className="mt-10 flex items-center justify-center gap-4">
+
+                            <button
+                                onClick={() => fetchCompanies(pagination.page - 1)}
+                                disabled={pagination.page === 1}
+                                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"                        >
+                                Previous
+                            </button>
+
+                            <span className="text-sm font-medium text-slate-700">
+                                Page {pagination.page} of {pagination.totalPages}
+                            </span>
+
+                            <button
+                                onClick={() => fetchCompanies(pagination.page + 1)}
+                                disabled={pagination.page === pagination.totalPages}
+                                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"                        >
+                                Next
+                            </button>
+
+                        </div>
+                    )}
 
                 </section>
             </main>

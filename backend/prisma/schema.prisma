@@ -43,6 +43,7 @@ enum TransactionType {
 enum TransactionStatus {
   PENDING
   UNDER_PROCESS
+  PARTIALLY_COMPLETED
   COMPLETED
   REJECTED
   CANCELLED
@@ -172,6 +173,29 @@ model Transaction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  sellMatches TransactionMatch[] @relation("SellMatches")
+  buyMatches  TransactionMatch[] @relation("BuyMatches")
+
   @@index([status])
   @@index([userId])
+}
+
+model TransactionMatch {
+  id Int @id @default(autoincrement())
+
+  sellTransactionId Int
+  sellTransaction Transaction @relation("SellMatches", fields: [sellTransactionId], references: [id])
+
+  buyTransactionId Int
+  buyTransaction Transaction @relation("BuyMatches", fields: [buyTransactionId], references: [id])
+
+  quantity Int
+  
+  executionPrice Decimal @db.Decimal(12, 2)
+  totalAmount    Decimal @db.Decimal(14, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([sellTransactionId])
+  @@index([buyTransactionId])
 }

@@ -87,6 +87,10 @@ export class TransactionService {
             }
         });
 
+        const dueDate = new Date(transaction.createdAt);
+        const dueTimeinDays = 1
+        dueDate.setDate(dueDate.getDate() + dueTimeinDays);
+        const formattedDueDate = String(dueDate.getDate()).padStart(2, "0") + "/" + String(dueDate.getMonth() + 1).padStart(2, "0") + "/" + dueDate.getFullYear();
         this.emailService.sendTransactionEmail(
             session.user.email,
             transaction.id,
@@ -96,10 +100,12 @@ export class TransactionService {
             priceAtOrder.toString(),
             totalAmount.toString(),
             TransactionStatus.PENDING,
-            dto.type).catch((err) => {
-                throw new InternalServerErrorException("Unable to send confirmation email.")
-
-            });
+            dto.type,
+            session.user.dematDpId,
+            formattedDueDate
+        ).catch((err) => {
+            throw new InternalServerErrorException("Unable to send confirmation email.")
+        });
 
         return {
             success: true,
@@ -257,7 +263,8 @@ export class TransactionService {
             ],
             COMPLETED: [],
             REJECTED: [],
-            CANCELLED: []
+            CANCELLED: [],
+            PARTIALLY_COMPLETED: []
         };
 
         if (!validTransitions[transaction.status].includes(dto.status)) {

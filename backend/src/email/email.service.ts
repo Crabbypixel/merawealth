@@ -24,11 +24,11 @@ export class EmailService {
             );
     }
 
-    async sendLoginOtp(email: string, otp: number) {      
+    async sendLoginOtp(email: string, otp: number, isAdmin: boolean) {
         await this.transporter.sendMail({
             from: `"MeraWealth" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: `${otp} is your MeraWealth Login OTP`,
+            subject: `${otp} is your MeraWealth ${isAdmin ? 'Admin' : ''} Login OTP`,
             html: `
             <h2>MeraWealth Login Verification</h2>
                 <p>Your one-time password is:</p>
@@ -48,23 +48,33 @@ export class EmailService {
         indicativePrice: string,
         orderValue: string,
         status: TransactionStatus,
-        transactionType: TransactionType
+        transactionType: TransactionType,
+        dematDpId: string | null,
+        dueDate: string
     ) {
+        const orderDate = new Date().toLocaleDateString("en-GB");
+
+        const instruction =
+            transactionType.toLowerCase() === "sell"
+                ? "Failure to transfer within the due date may result in cancellation of the order."
+                : "Please retain the transaction details for further processing.";
+
         await this.transporter.sendMail({
             from: `"MeraWealth" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: `Order Confirmation ID: ${orderId}`,
+            subject: `Order Received (ID: ${orderId})`,
             html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 550px; margin: 0 auto; padding: 30px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff; color: #1f2937; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
         
         <!-- Header -->
         <h2 style="color: #2563eb; font-size: 24px; font-weight: 700; margin-top: 0; margin-bottom: 8px; border-bottom: 2px solid #eff6ff; padding-bottom: 12px;">
-            Order Confirmation
+            Order Received
         </h2>
         
         <p style="font-size: 16px; line-height: 1.5; color: #4b5563; margin-top: 16px;">
-            Dear <strong>${name}</strong>,
+            Dear Investor,
         </p>
+
         <p style="font-size: 15px; line-height: 1.5; color: #4b5563; margin-bottom: 24px;">
             Thank you for your order. Here are your transaction details:
         </p>
@@ -72,30 +82,100 @@ export class EmailService {
         <!-- Order Summary Card -->
         <div style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 20px; margin-bottom: 32px;">
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">Order ID</td>
-                    <td style="padding: 10px 0; text-align: right; color: #0f172a; font-weight: 600; font-family: monospace;">${orderId}</td>
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Order ID
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #0f172a; font-weight: 600; font-family: monospace;">
+                        ${orderId}
+                    </td>
                 </tr>
+
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">Company Name</td>
-                    <td style="padding: 10px 0; text-align: right; color: #0f172a; font-weight: 600;">${companyName}</td>
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Order Date
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #0f172a;">
+                        ${orderDate}
+                    </td>
                 </tr>
+
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">Transaction Type</td>
-                    <td style="padding: 10px 0; text-align: right; color: ${transactionType.toLowerCase() === 'buy' ? '#16a34a' : '#dc2626'}; font-weight: bold; text-transform: uppercase;">${transactionType}</td>
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Company Name
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #0f172a; font-weight: 600;">
+                        ${companyName}
+                    </td>
                 </tr>
+
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">Quantity</td>
-                    <td style="padding: 10px 0; text-align: right; color: #0f172a;">${quantity}</td>
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Transaction Type
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: ${transactionType.toLowerCase() === "buy"
+                    ? "#3b68fc"
+                    : "#dc2626"
+                }; font-weight: bold; text-transform: uppercase;">
+                        ${transactionType}
+                    </td>
                 </tr>
+
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">Price</td>
-                    <td style="padding: 10px 0; text-align: right; color: #0f172a;">₹${indicativePrice}</td>
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Quantity
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #0f172a;">
+                        ${quantity} Shares
+                    </td>
                 </tr>
+
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Price
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #0f172a;">
+                        ₹${indicativePrice}
+                    </td>
+                </tr>
+
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Target DP ID
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #0f172a; font-weight: 600;">
+                        ${dematDpId ?? "Not available"}
+                    </td>
+                </tr>
+
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Due Date
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #dc2626; font-weight: 600;">
+                        ${dueDate}
+                    </td>
+                </tr>
+
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px 0; color: #64748b; font-weight: 500;">
+                        Instruction
+                    </td>
+                    <td style="padding: 10px 0; text-align: right; color: #0f172a;">
+                        ${instruction}
+                    </td>
+                </tr>
+
                 <tr>
-                    <td style="padding: 14px 0 0 0; color: #0f172a; font-weight: 700; font-size: 16px;">Total Order Value</td>
-                    <td style="padding: 14px 0 0 0; text-align: right; color: #2563eb; font-weight: 700; font-size: 18px;">₹${orderValue}</td>
+                    <td style="padding: 14px 0 0 0; color: #0f172a; font-weight: 700; font-size: 16px;">
+                        Total Order Value
+                    </td>
+                    <td style="padding: 14px 0 0 0; text-align: right; color: #2563eb; font-weight: 700; font-size: 18px;">
+                        ₹${orderValue}
+                    </td>
                 </tr>
+
             </table>
         </div>
 
@@ -103,13 +183,14 @@ export class EmailService {
         <p style="font-size: 15px; color: #4b5563; line-height: 1.5; margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
             We'll get back to you shortly to finalize your request.
         </p>
+
         <p style="font-size: 13px; color: #9ca3af; margin-top: 24px; line-height: 1.4;">
             Best regards,<br>
             <strong>The MeraWealth Team</strong>
         </p>
+
     </div>
     `,
         });
-
     }
 }

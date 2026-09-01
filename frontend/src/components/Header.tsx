@@ -54,7 +54,7 @@ export default function Header() {
 
     return (
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
-            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+            <div className="mx-auto flex h-20 w-full items-center justify-between px-8 lg:px-12 xl:px-16">
 
                 {/* Logo */}
                 <Link href="/" className="flex items-center">
@@ -71,7 +71,7 @@ export default function Header() {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className="text-sm font-medium text-slate-700 transition hover:text-blue-600"
+                            className="text-sm font-bold text-slate-700 transition hover:text-blue-600"
                         >
                             {item.name}
                         </Link>
@@ -126,7 +126,7 @@ export default function Header() {
                                 key={item.name}
                                 href={item.href}
                                 onClick={() => setMenuOpen(false)}
-                                className="py-3 text-base font-medium text-slate-700 hover:text-blue-600"
+                                className="py-3 text-base font-bold text-slate-700 hover:text-blue-600"
                             >
                                 {item.name}
                             </Link>
