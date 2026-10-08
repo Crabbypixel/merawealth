@@ -24,6 +24,9 @@ Your earlier commits were made on the server, so first check it has no unsaved e
 
 ## Part 2: Set up your laptop (one time, about an hour)
 
+On Windows 10, follow [windows-local-setup.md](windows-local-setup.md) instead of this
+part: it has the same steps with Windows commands and explains Docker along the way.
+
 1. Install these (all free):
    - **Git**: https://git-scm.com/downloads
    - **Node.js** LTS version: https://nodejs.org (on the server, `node -v` shows which
