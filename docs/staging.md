@@ -58,7 +58,7 @@ live server is never touched.
    `frontend/.env.local`. In `backend/.env` set
    `DATABASE_URL=postgresql://merawealth:merawealth@localhost:5432/merawealth_dev`
    and a test Gmail account.
-4. Backend: `cd backend && pnpm install && npx prisma migrate deploy && pnpm start:dev`
+4. Backend: `cd backend && pnpm install && npx prisma migrate deploy && npx prisma generate && pnpm start:dev`
 5. Frontend: `cd frontend && pnpm install && pnpm dev`, then open http://localhost:3000
 6. Admins are not created through the app, so add yourself as an admin row in your
    local database (with your own email) to log in to the admin side.
@@ -68,16 +68,54 @@ live server is never touched.
 
 ## Deploying to production safely
 
-Do this only when you are happy with a change locally.
+Do this only when you are happy with a change locally. The apps on the server are
+kept running by pm2.
 
-1. On your laptop: merge the feature branch into `main` and `git push`.
-2. On the server, **back up the database first**:
-   `pg_dump -U <db user> -Fc <db name> > ~/backups/merawealth-$(date +%F-%H%M).dump`
-3. Note the current version so you can go back: `git rev-parse HEAD`
-4. `git pull`, `pnpm install`, `npx prisma migrate deploy`, `pnpm build` (in both
-   folders), then restart the apps.
-5. If something breaks: `git checkout <the version you noted>`, rebuild and restart.
-   If a migration damaged data, restore the backup with `pg_restore`.
+**On your laptop:** merge the feature branch into `main` and `git push`.
+
+**On the server** (SSH in, then `cd` to the merawealth folder):
+
+```bash
+# 0. Make sure nobody edited code directly on the server. This should say
+#    "nothing to commit, working tree clean". If not, stop and sort that out first.
+git status
+
+# 1. Back up the database (keep a few of these files).
+mkdir -p ~/backups
+pg_dump -U <db user> -h localhost -Fc <db name> > ~/backups/merawealth-$(date +%F-%H%M).dump
+
+# 2. Note the version that is live now, so you can go back to it.
+git rev-parse HEAD
+
+# 3. Get the new code.
+git pull origin main
+
+# 4. Backend: install, apply database changes, build.
+cd backend
+pnpm install --frozen-lockfile
+npx prisma migrate deploy
+npx prisma generate
+pnpm build
+cd ..
+
+# 5. Frontend: install and build.
+cd frontend
+pnpm install --frozen-lockfile
+pnpm build
+cd ..
+
+# 6. Restart. `pm2 list` shows your app names; restart both.
+pm2 list
+pm2 restart <backend name> <frontend name>
+pm2 logs --lines 50   # watch for errors, Ctrl+C to leave
+```
+
+Then open the live site and check login and one order screen.
+
+**If something breaks:** `git checkout <the version you noted>`, repeat steps 4 to 6,
+and the old version is back. If a database change damaged data, restore the backup with
+`pg_restore -U <db user> -h localhost -d <db name> --clean <backup file>`
+(ask for help before doing this one).
 
 ## Setting up staging (optional, later)
 
