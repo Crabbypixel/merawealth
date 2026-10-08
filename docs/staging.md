@@ -32,30 +32,57 @@ production database password.
 ## Branches (how code moves)
 
 - `main` = what is live in production. Only finished, tested work goes here.
-- `staging` = what is on the staging server.
+- `staging` = what is on the staging server (only if you set one up later).
 - `feature/<name>` = one branch per new feature, made from `main`.
 
 Workflow for a new feature:
 
 1. On your laptop: `git checkout main && git pull && git checkout -b feature/holdings`
-2. Build and test it locally.
-3. Merge it into `staging`, push, and deploy staging (see below). Click through it.
-4. When it works on staging, open a pull request from `feature/holdings` into `main`
-   on GitHub, merge it, then deploy production.
+2. Build and test it locally until you are happy with it. Commit as often as you like;
+   nothing on this branch reaches clients.
+3. (If you have a staging server: merge it into `staging` and click through it there.)
+4. Open a pull request from `feature/holdings` into `main` on GitHub, merge it, then
+   follow "Deploying to production safely" below.
 
-## Setting up local development (free)
+## Setting up local development (free, start here)
 
-1. Install Node.js (same major version as the server), pnpm and PostgreSQL on your
-   laptop (or run Postgres in Docker).
-2. Create a database: `createdb merawealth_dev`
+This is the cheapest and safest way to test: everything runs on your laptop and the
+live server is never touched.
+
+1. Install Node.js (same major version as the server), pnpm, git and
+   [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. Start a local database (from the repo folder): `docker compose up -d`
+   This runs Postgres in a container using `docker-compose.yml`. No Postgres install
+   needed, and `docker compose down -v` wipes it if you want a fresh start.
 3. Copy `backend/.env.example` to `backend/.env` and `frontend/.env.example` to
-   `frontend/.env.local`, and fill them in.
+   `frontend/.env.local`. In `backend/.env` set
+   `DATABASE_URL=postgresql://merawealth:merawealth@localhost:5432/merawealth_dev`
+   and a test Gmail account.
 4. Backend: `cd backend && pnpm install && npx prisma migrate deploy && pnpm start:dev`
-5. Frontend: `cd frontend && pnpm install && pnpm dev`
+5. Frontend: `cd frontend && pnpm install && pnpm dev`, then open http://localhost:3000
 6. Admins are not created through the app, so add yourself as an admin row in your
    local database (with your own email) to log in to the admin side.
+7. Before you call a feature done, also try a production-style build on your laptop:
+   `pnpm build && pnpm start` in each folder. This catches build errors before they
+   reach the live server.
 
-## Setting up staging (a second small server)
+## Deploying to production safely
+
+Do this only when you are happy with a change locally.
+
+1. On your laptop: merge the feature branch into `main` and `git push`.
+2. On the server, **back up the database first**:
+   `pg_dump -U <db user> -Fc <db name> > ~/backups/merawealth-$(date +%F-%H%M).dump`
+3. Note the current version so you can go back: `git rev-parse HEAD`
+4. `git pull`, `pnpm install`, `npx prisma migrate deploy`, `pnpm build` (in both
+   folders), then restart the apps.
+5. If something breaks: `git checkout <the version you noted>`, rebuild and restart.
+   If a migration damaged data, restore the backup with `pg_restore`.
+
+## Setting up staging (optional, later)
+
+Only worth it once you have more users or other people testing. Until then, local
+development plus the safe deploy routine above is enough.
 
 1. In the AWS console (same region as production, Mumbai `ap-south-1`), launch a new
    small EC2 instance, for example `t3.small`, with Ubuntu.

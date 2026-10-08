@@ -1,0 +1,21 @@
+# Local development database only. This never touches the production server.
+#   Start:  docker compose up -d
+#   Stop:   docker compose down        (your data is kept)
+#   Wipe:   docker compose down -v     (deletes the local database)
+# Matching backend/.env line:
+#   DATABASE_URL=postgresql://merawealth:merawealth@localhost:5432/merawealth_dev
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: merawealth
+      POSTGRES_PASSWORD: merawealth
+      POSTGRES_DB: merawealth_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - merawealth_db:/var/lib/postgresql/data
+
+volumes:
+  merawealth_db:
