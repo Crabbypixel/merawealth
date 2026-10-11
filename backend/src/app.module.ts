@@ -10,6 +10,7 @@ import { AdminModule } from './admin/admin.module';
 import { CompanyModule } from './company/company.module';
 import { ClientModule } from './client/client.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { OrderMatchModule } from './order-match/order-match.module';
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "path";
 
@@ -29,7 +30,8 @@ import { join } from "path";
     AdminModule,
     CompanyModule,
     ClientModule,
-    TransactionModule
+    TransactionModule,
+    OrderMatchModule
   ],
 
   controllers: [AppController],

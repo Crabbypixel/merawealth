@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CompanyStatus, TransactionStatus } from '@prisma/client';
@@ -132,6 +132,9 @@ export class TransactionService {
                     id: true,
                     type: true,
                     quantity: true,
+                    approvedQuantity: true,
+                    matchedQuantity: true,
+                    pendingQuantity: true,
                     priceAtOrder: true,
                     totalAmount: true,
                     status: true,
@@ -211,6 +214,9 @@ export class TransactionService {
                     id: true,
                     type: true,
                     quantity: true,
+                    approvedQuantity: true,
+                    matchedQuantity: true,
+                    pendingQuantity: true,
                     priceAtOrder: true,
                     totalAmount: true,
                     status: true,
@@ -252,6 +258,7 @@ export class TransactionService {
             throw new NotFoundException("Transaction not found.");
         }
 
+        // PARTIALLY_COMPLETED is only set by order matching, never by hand.
         const validTransitions: Record<TransactionStatus, TransactionStatus[]> = {
             PENDING: [
                 TransactionStatus.UNDER_PROCESS,
@@ -261,10 +268,13 @@ export class TransactionService {
                 TransactionStatus.COMPLETED,
                 TransactionStatus.REJECTED
             ],
+            PARTIALLY_COMPLETED: [
+                TransactionStatus.COMPLETED,
+                TransactionStatus.REJECTED
+            ],
             COMPLETED: [],
             REJECTED: [],
-            CANCELLED: [],
-            PARTIALLY_COMPLETED: []
+            CANCELLED: []
         };
 
         if (!validTransitions[transaction.status].includes(dto.status)) {
@@ -274,10 +284,53 @@ export class TransactionService {
             });
         }
 
-        return this.prisma.transaction.update({
-            where: { id },
-            data: { status: dto.status }
+        const isApproval = dto.status === TransactionStatus.UNDER_PROCESS;
+
+        if (!isApproval && dto.approvedQuantity !== undefined) {
+            throw new BadRequestException({
+                success: false,
+                message: "Approved quantity can only be set when approving an order."
+            });
+        }
+
+        // Approving fixes the final quantity used for order matching.
+        // Matched/pending quantities are left as they are for every other change,
+        // so a reject keeps the shares already matched.
+        let quantities = {};
+        if (isApproval) {
+            const approvedQuantity = dto.approvedQuantity;
+
+            if (approvedQuantity === undefined || approvedQuantity < 1 || approvedQuantity > transaction.quantity) {
+                throw new BadRequestException({
+                    success: false,
+                    message: `Approved quantity must be between 1 and ${transaction.quantity}.`
+                });
+            }
+
+            // The approved quantity is the final quantity, so the order total follows it.
+            quantities = {
+                approvedQuantity,
+                matchedQuantity: 0,
+                pendingQuantity: approvedQuantity,
+                totalAmount: transaction.priceAtOrder.mul(approvedQuantity)
+            };
+        }
+
+        // Only update if nobody changed the status since we read it
+        // (another admin tab, order matching or a client cancel).
+        const result = await this.prisma.transaction.updateMany({
+            where: { id, status: transaction.status },
+            data: { status: dto.status, ...quantities }
         });
+
+        if (result.count === 0) {
+            throw new ConflictException({
+                success: false,
+                message: "This order was changed by someone else. Please refresh and try again."
+            });
+        }
+
+        return this.prisma.transaction.findUnique({ where: { id } });
     }
 
     async cancelTranscationClient(id: number, req: Request) {
@@ -321,10 +374,15 @@ export class TransactionService {
             throw new BadRequestException("Only pending transaction can be cancelled.");
         }
 
-        await this.prisma.transaction.update({
-            where: { id },
+        // Only cancel if the admin has not approved or rejected it in the meantime.
+        const result = await this.prisma.transaction.updateMany({
+            where: { id, status: TransactionStatus.PENDING },
             data: { status: TransactionStatus.CANCELLED }
         });
+
+        if (result.count === 0) {
+            throw new BadRequestException("Only pending transaction can be cancelled.");
+        }
 
         return {
             success: true,

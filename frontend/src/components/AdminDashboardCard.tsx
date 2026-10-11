@@ -1,6 +1,8 @@
 "use client"
 
 import { apiFetch } from "@/utils/apiFetch";
+import OrderMatchModal from "@/components/OrderMatchModal";
+import OrderVerifyModal from "@/components/OrderVerifyModal";
 import { GSP_NO_RETURNED_VALUE } from "next/dist/lib/constants";
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -53,6 +55,9 @@ interface Company {
 interface Transaction {
     id: number;
     quantity: number;
+    approvedQuantity: number;
+    matchedQuantity: number;
+    pendingQuantity: number;
     type: "BUY" | "SELL";
     status: string;
     priceAtOrder: string;
@@ -125,6 +130,8 @@ export default function AdminCard() {
         newLogo: File | null;
     } | null>(null);
     const [savingCompany, setSavingCompany] = useState(false);
+    const [showOrderMatch, setShowOrderMatch] = useState(false);
+    const [verifyOrder, setVerifyOrder] = useState<Transaction | null>(null);
 
     const router = useRouter();                                 // Navigation hook to programmatically navigate between pages
 
@@ -498,17 +505,15 @@ export default function AdminCard() {
             case "PENDING":
                 return (
                     <button
-                        disabled={processingId === transaction.id}
-                        className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400"
-                        onClick={() => updateTransactionStatus(transaction.id, "UNDER_PROCESS")}
+                        className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        onClick={() => setVerifyOrder(transaction)}
                     >
-                        {processingId === transaction.id
-                            ? "Processing..."
-                            : "Start Processing"}
+                        View & Verify
                     </button>
                 );
 
             case "UNDER_PROCESS":
+            case "PARTIALLY_COMPLETED":
                 return (
                     <div className="flex justify-center gap-2">
                         <button
@@ -582,6 +587,9 @@ export default function AdminCard() {
 
             case "UNDER_PROCESS":
                 return "inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700";
+
+            case "PARTIALLY_COMPLETED":
+                return "inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700";
 
             case "COMPLETED":
                 return "inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700";
@@ -874,6 +882,13 @@ export default function AdminCard() {
                                         >
                                             Refresh
                                         </button>
+
+                                        <button
+                                            onClick={() => setShowOrderMatch(true)}
+                                            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                                        >
+                                            Order Match
+                                        </button>
                                     </div>
                                 </div>
 
@@ -882,6 +897,7 @@ export default function AdminCard() {
                                         "ALL",
                                         "PENDING",
                                         "UNDER_PROCESS",
+                                        "PARTIALLY_COMPLETED",
                                         "COMPLETED",
                                         "REJECTED",
                                         "CANCELLED",
@@ -906,7 +922,10 @@ export default function AdminCard() {
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Client</th>
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Company</th>
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Type</th>
-                                                <th className="px-4 py-3 font-semibold text-slate-600">Qty</th>
+                                                <th className="px-4 py-3 font-semibold text-slate-600">Ordered</th>
+                                                <th className="px-4 py-3 font-semibold text-slate-600">
+                                                    Approved / Matched / Pending
+                                                </th>
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Price</th>
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Total</th>
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
@@ -954,6 +973,12 @@ export default function AdminCard() {
 
                                                     <td className="px-4 py-2">
                                                         {transaction.quantity.toLocaleString("en-IN")}
+                                                    </td>
+
+                                                    <td className="px-4 py-2">
+                                                        {transaction.approvedQuantity === 0
+                                                            ? "–"
+                                                            : `${transaction.approvedQuantity.toLocaleString("en-IN")} / ${transaction.matchedQuantity.toLocaleString("en-IN")} / ${transaction.pendingQuantity.toLocaleString("en-IN")}`}
                                                     </td>
 
                                                     <td className="px-4 py-2">
@@ -1505,6 +1530,28 @@ export default function AdminCard() {
 
                             </div>
                         </div>
+                    )}
+
+                    {verifyOrder && (
+                        <OrderVerifyModal
+                            order={verifyOrder}
+                            onClose={() => setVerifyOrder(null)}
+                            onDone={() => {
+                                setVerifyOrder(null);
+                                fetchTransactions();
+                            }}
+                            onError={handleError}
+                        />
+                    )}
+
+                    {showOrderMatch && (
+                        <OrderMatchModal
+                            onClose={() => {
+                                setShowOrderMatch(false);
+                                fetchTransactions();
+                            }}
+                            onError={handleError}
+                        />
                     )}
 
                     {showCompanyModal && selectedCompany && (
