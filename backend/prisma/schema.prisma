@@ -59,8 +59,9 @@ model Admin {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  otpLogs  OtpLog[]
-  sessions Session[]
+  otpLogs            OtpLog[]
+  sessions           Session[]
+  transactionMatches TransactionMatch[]
 }
 
 model User {
@@ -70,12 +71,12 @@ model User {
   email       String @unique
   name        String
 
-  panNumber String? @db.Char(10)
+  panNumber     String? @db.Char(10)
   dematClientId String? @db.VarChar(8)
   dematDpId     String? @db.VarChar(8)
   bankAccountNo String? @db.VarChar(34)
-  ifscCode String? @db.Char(11)
-  bankName String? @db.VarChar(100)
+  ifscCode      String? @db.Char(11)
+  bankName      String? @db.VarChar(100)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -147,7 +148,8 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
+  transactions       Transaction[]
+  transactionMatches TransactionMatch[]
 }
 
 model Transaction {
@@ -163,6 +165,13 @@ model Transaction {
 
   quantity Int
 
+  // Set by the admin when approving (PENDING -> UNDER_PROCESS), between 1 and quantity.
+  // Order matching works on approvedQuantity, not on the quantity the client ordered.
+  // Invariant: pendingQuantity = approvedQuantity - matchedQuantity
+  approvedQuantity Int @default(0)
+  matchedQuantity  Int @default(0)
+  pendingQuantity  Int @default(0)
+
   priceAtOrder Decimal @db.Decimal(12, 2)
   totalAmount  Decimal @db.Decimal(14, 2)
 
@@ -173,29 +182,35 @@ model Transaction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sellMatches TransactionMatch[] @relation("SellMatches")
-  buyMatches  TransactionMatch[] @relation("BuyMatches")
+  matches TransactionMatch[]
 
   @@index([status])
   @@index([userId])
 }
 
+// One row per order per manual match. Rows that share companyCode + matchId
+// form one match: their SELL quantities add up to their BUY quantities.
+// Order details (client, dates, quantities, price) are read from the linked order.
 model TransactionMatch {
   id Int @id @default(autoincrement())
 
-  sellTransactionId Int
-  sellTransaction Transaction @relation("SellMatches", fields: [sellTransactionId], references: [id])
+  // Typed by the admin (e.g. "M1"), stored trimmed and upper-case.
+  // Never reused for the same company once confirmed.
+  matchId String @db.VarChar(20)
 
-  buyTransactionId Int
-  buyTransaction Transaction @relation("BuyMatches", fields: [buyTransactionId], references: [id])
+  companyCode String
+  company     Company @relation(fields: [companyCode], references: [companyCode])
+
+  transactionId Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
 
   quantity Int
-  
-  executionPrice Decimal @db.Decimal(12, 2)
-  totalAmount    Decimal @db.Decimal(14, 2)
 
-  createdAt DateTime @default(now())
+  matchedByAdminId Int
+  matchedByAdmin   Admin @relation(fields: [matchedByAdminId], references: [id])
 
-  @@index([sellTransactionId])
-  @@index([buyTransactionId])
+  matchDate DateTime @default(now())
+
+  @@index([companyCode, matchId])
+  @@index([transactionId])
 }

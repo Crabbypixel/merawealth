@@ -8,9 +8,11 @@ interface Transaction {
     id: number;
     type: "BUY" | "SELL";
     quantity: number;
+    approvedQuantity: number;
+    matchedQuantity: number;
     priceAtOrder: string;
     totalAmount: string;
-    status: "PENDING" | "UNDER_PROCESS" | "COMPLETED" | "REJECTED" | "CANCELLED";
+    status: "PENDING" | "UNDER_PROCESS" | "PARTIALLY_COMPLETED" | "COMPLETED" | "REJECTED" | "CANCELLED";
     createdAt: string;
     company: {
         companyCode: string;
@@ -92,6 +94,8 @@ export default function TransactionHistoryPage() {
                 return "bg-yellow-100 text-yellow-800";
             case "UNDER_PROCESS":
                 return "bg-blue-100 text-blue-800";
+            case "PARTIALLY_COMPLETED":
+                return "bg-purple-100 text-purple-800";
             case "COMPLETED":
                 return "bg-green-100 text-green-800";
             case "REJECTED":
@@ -99,6 +103,11 @@ export default function TransactionHistoryPage() {
             case "CANCELLED":
                 return "bg-gray-100 text-gray-700";
         }
+    }
+
+    // Approved and matched quantities only exist once the admin has approved the order.
+    function showQty(transaction: Transaction, value: number) {
+        return transaction.approvedQuantity === 0 ? "–" : value.toLocaleString("en-IN");
     }
 
     function formatDate(date: string) {
@@ -192,6 +201,14 @@ export default function TransactionHistoryPage() {
                                         Qty
                                     </th>
 
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Approved
+                                    </th>
+
+                                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Matched
+                                    </th>
+
                                     <th className="w-32 px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                                         Share Price
                                     </th>
@@ -242,6 +259,14 @@ export default function TransactionHistoryPage() {
 
                                         <td className="px-5 py-4 text-gray-900 font-medium">
                                             {transaction.quantity.toLocaleString("en-IN")}
+                                        </td>
+
+                                        <td className="px-5 py-4 text-gray-900 font-medium">
+                                            {showQty(transaction, transaction.approvedQuantity)}
+                                        </td>
+
+                                        <td className="px-5 py-4 text-gray-900 font-medium">
+                                            {showQty(transaction, transaction.matchedQuantity)}
                                         </td>
 
                                         <td className="w-32 px-5 py-4 text-right font-semibold text-gray-900">
@@ -332,6 +357,26 @@ export default function TransactionHistoryPage() {
 
                                             <p className="font-semibold text-slate-900">
                                                 {transaction.quantity.toLocaleString("en-IN")}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">
+                                                Approved
+                                            </p>
+
+                                            <p className="font-semibold text-slate-900">
+                                                {showQty(transaction, transaction.approvedQuantity)}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs uppercase text-slate-500">
+                                                Matched
+                                            </p>
+
+                                            <p className="font-semibold text-slate-900">
+                                                {showQty(transaction, transaction.matchedQuantity)}
                                             </p>
                                         </div>
 

@@ -54,6 +54,7 @@ export async function apiFetch(endpoint: string, options: FetchOptions = {}) {
 
         const error = new Error(formattedMessage || `Request failed with status ${response.status}`);
         (error as any).status = response.status;
+        (error as any).data = errorData;     // full error body, e.g. the list of order matching problems
         throw error;
     }
 
