@@ -68,7 +68,9 @@ export default function OrderVerifyModal({ order, onClose, onDone, onError }: Pr
                     {detail("Client", order.user.name)}
                     {detail("Contact", <>{order.user.email}<br />{order.user.phoneNumber}</>)}
                     {detail("Company", order.company.companyName)}
-                    {detail("Type", order.type)}
+                    {detail("Type", (
+                        <span className={order.type === "BUY" ? "text-blue-700" : "text-red-700"}>{order.type}</span>
+                    ))}
                     {detail("Ordered quantity", order.quantity.toLocaleString("en-IN"))}
                     {detail("Price", `₹${Number(order.priceAtOrder).toLocaleString("en-IN")}`)}
                     {detail("Ordered on", new Date(order.createdAt).toLocaleString("en-IN"))}
