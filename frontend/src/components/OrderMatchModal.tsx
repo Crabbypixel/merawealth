@@ -160,6 +160,17 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
         return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
     }
 
+    // One side of a company in the list: shares waiting, with the number of orders below.
+    function renderSide(shares: number, orders: number) {
+        if (orders === 0) return <span className="text-slate-400">None</span>;
+        return (
+            <>
+                <p className="text-base font-semibold text-slate-900">{shares.toLocaleString("en-IN")} shares</p>
+                <p className="text-xs text-slate-500">{orders} {orders === 1 ? "order" : "orders"}</p>
+            </>
+        );
+    }
+
     // editable is false when the company has only one side, so there is nothing to match yet.
     function renderTable(title: string, rows: MatchOrderRow[], tone: "red" | "blue", editable: boolean) {
         return (
@@ -273,21 +284,34 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                                 <thead className="bg-slate-50 text-left">
                                     <tr>
                                         <th className="px-4 py-3 font-semibold text-slate-600">Company</th>
-                                        <th className="px-4 py-3 font-semibold text-slate-600">Sell orders (shares pending)</th>
-                                        <th className="px-4 py-3 font-semibold text-slate-600">Buy orders (shares pending)</th>
+                                        <th className="px-4 py-3 font-semibold text-red-700">Selling</th>
+                                        <th className="px-4 py-3 font-semibold text-blue-700">Buying</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
                                         <th className="px-4 py-3"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {companies.map((c) => (
+                                    {/* Companies ready to match first, then the rest, each by name */}
+                                    {[...companies].sort((a, b) => Number(b.canMatch) - Number(a.canMatch)).map((c) => (
                                         <tr key={c.companyCode} className="border-t border-slate-200">
-                                            <td className="px-4 py-3">
-                                                <p className="font-semibold">{c.companyName}</p>
+                                            <td className="px-4 py-4">
+                                                <p className="font-semibold text-slate-900">{c.companyName}</p>
                                                 <p className="text-xs text-slate-500">{c.companyCode}</p>
                                             </td>
-                                            <td className="px-4 py-3">{c.sellOrders} ({c.sellPending.toLocaleString("en-IN")})</td>
-                                            <td className="px-4 py-3">{c.buyOrders} ({c.buyPending.toLocaleString("en-IN")})</td>
-                                            <td className="px-4 py-3 text-right">
+                                            <td className="px-4 py-4">{renderSide(c.sellPending, c.sellOrders)}</td>
+                                            <td className="px-4 py-4">{renderSide(c.buyPending, c.buyOrders)}</td>
+                                            <td className="px-4 py-4">
+                                                {c.canMatch ? (
+                                                    <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                                                        Ready to match
+                                                    </span>
+                                                ) : (
+                                                    <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
+                                                        No {c.sellOrders > 0 ? "buyers" : "sellers"} yet
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4 text-right">
                                                 {c.canMatch ? (
                                                     <button
                                                         onClick={() => openCompany(c.companyCode)}
@@ -296,17 +320,12 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                                                         Match orders
                                                     </button>
                                                 ) : (
-                                                    <div className="flex items-center justify-end gap-3">
-                                                        <span className="text-xs text-slate-500">
-                                                            No {c.sellOrders > 0 ? "buyers" : "sellers"} yet
-                                                        </span>
-                                                        <button
-                                                            onClick={() => openCompany(c.companyCode)}
-                                                            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                                                        >
-                                                            View orders
-                                                        </button>
-                                                    </div>
+                                                    <button
+                                                        onClick={() => openCompany(c.companyCode)}
+                                                        className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                                                    >
+                                                        View orders
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
