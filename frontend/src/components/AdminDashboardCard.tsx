@@ -63,6 +63,7 @@ interface Transaction {
     priceAtOrder: string;
     totalAmount: string;
     createdAt: string;
+    matchedAt: string | null;   // latest Order Match date, null if never matched
     user: {
         name: string;
         phoneNumber: string,
@@ -930,6 +931,7 @@ export default function AdminCard() {
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Total</th>
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Status</th>
                                                 <th className="px-4 py-3 font-semibold text-slate-600">Created</th>
+                                                <th className="px-4 py-3 font-semibold text-slate-600">Matched</th>
                                                 <th className="px-4 py-2 text-center">Action</th>
                                             </tr>
                                         </thead>
@@ -996,6 +998,12 @@ export default function AdminCard() {
                                                     </td>
                                                     <td className="px-4 py-2">
                                                         {formatDate(transaction.createdAt)}
+                                                    </td>
+                                                    <td className="px-4 py-2">
+                                                        {transaction.matchedAt &&
+                                                            (transaction.status === "COMPLETED" || transaction.status === "PARTIALLY_COMPLETED")
+                                                            ? formatDate(transaction.matchedAt)
+                                                            : "–"}
                                                     </td>
 
                                                     <td className="px-4 py-2 text-center">

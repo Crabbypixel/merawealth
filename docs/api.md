@@ -231,6 +231,9 @@ Cancels the client's own order. Only allowed while it is `PENDING`.
 
 All orders, newest first. Optional `status` filter, plus `page` and `limit` (max 100).
 Each order includes the client (name, phone, email) and the company.
+`matchedAt` is the date of the order's latest Order Match round, or `null` if it was never
+matched. The admin screen shows it in the Matched column for completed and partially
+completed orders.
 
 ### `PATCH /admin/transactions/:id`
 
