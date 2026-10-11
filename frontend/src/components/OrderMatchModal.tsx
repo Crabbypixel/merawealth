@@ -11,6 +11,7 @@ interface MatchCompany {
     buyOrders: number;
     sellPending: number;
     buyPending: number;
+    canMatch: boolean;      // false when the company has only buy or only sell orders
 }
 
 interface CompanyBook {
@@ -146,6 +147,7 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
         }
     }
 
+    const canMatch = !!book && book.sellers.length > 0 && book.buyers.length > 0;
     const problemIds = new Set(saved?.problems.map((p) => p.transactionId).filter((id) => id !== undefined));
 
     function pendingAfter(order: MatchOrderRow) {
@@ -158,7 +160,8 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
         return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
     }
 
-    function renderTable(title: string, rows: MatchOrderRow[], tone: "red" | "blue") {
+    // editable is false when the company has only one side, so there is nothing to match yet.
+    function renderTable(title: string, rows: MatchOrderRow[], tone: "red" | "blue", editable: boolean) {
         return (
             <div className="mb-8">
                 <h3 className={`mb-3 text-lg font-bold ${tone === "red" ? "text-red-700" : "text-blue-700"}`}>
@@ -179,8 +182,12 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                                     <th className="px-3 py-2 font-semibold text-slate-600">Order qty</th>
                                     <th className="px-3 py-2 font-semibold text-slate-600">Approved</th>
                                     <th className="px-3 py-2 font-semibold text-slate-600">Matched so far</th>
-                                    <th className="px-3 py-2 font-semibold text-slate-600">Match qty</th>
-                                    <th className="px-3 py-2 font-semibold text-slate-600">Match ID</th>
+                                    {editable && (
+                                        <>
+                                            <th className="px-3 py-2 font-semibold text-slate-600">Match qty</th>
+                                            <th className="px-3 py-2 font-semibold text-slate-600">Match ID</th>
+                                        </>
+                                    )}
                                     <th className="px-3 py-2 font-semibold text-slate-600">Pending</th>
                                 </tr>
                             </thead>
@@ -200,26 +207,30 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                                             <td className="px-3 py-2">{order.quantity.toLocaleString("en-IN")}</td>
                                             <td className="px-3 py-2">{order.approvedQuantity.toLocaleString("en-IN")}</td>
                                             <td className="px-3 py-2">{order.matchedQuantity.toLocaleString("en-IN")}</td>
-                                            <td className="px-3 py-2">
-                                                <input
-                                                    type="number"
-                                                    min={1}
-                                                    max={order.pendingQuantity}
-                                                    step={1}
-                                                    value={input.matchQuantity}
-                                                    onChange={(e) => updateInput(order.id, "matchQuantity", e.target.value)}
-                                                    className="w-24 rounded-md border border-slate-300 px-2 py-1"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <input
-                                                    type="text"
-                                                    maxLength={20}
-                                                    value={input.matchId}
-                                                    onChange={(e) => updateInput(order.id, "matchId", e.target.value)}
-                                                    className="w-28 rounded-md border border-slate-300 px-2 py-1 uppercase"
-                                                />
-                                            </td>
+                                            {editable && (
+                                                <>
+                                                    <td className="px-3 py-2">
+                                                        <input
+                                                            type="number"
+                                                            min={1}
+                                                            max={order.pendingQuantity}
+                                                            step={1}
+                                                            value={input.matchQuantity}
+                                                            onChange={(e) => updateInput(order.id, "matchQuantity", e.target.value)}
+                                                            className="w-24 rounded-md border border-slate-300 px-2 py-1"
+                                                        />
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <input
+                                                            type="text"
+                                                            maxLength={20}
+                                                            value={input.matchId}
+                                                            onChange={(e) => updateInput(order.id, "matchId", e.target.value)}
+                                                            className="w-28 rounded-md border border-slate-300 px-2 py-1 uppercase"
+                                                        />
+                                                    </td>
+                                                </>
+                                            )}
                                             <td className="px-3 py-2 font-semibold">{pendingAfter(order).toLocaleString("en-IN")}</td>
                                         </tr>
                                     );
@@ -240,7 +251,7 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                         <h2 className="text-2xl font-bold text-slate-900">
                             {book ? `Order Match: ${book.company.companyName}` : "Order Match"}
                         </h2>
-                        {book && (
+                        {book && canMatch && (
                             <p className="text-sm text-slate-500">
                                 Matching date: {formatDate(new Date().toISOString())}. Use the same Match ID for the sellers and buyers matched together.
                             </p>
@@ -254,7 +265,7 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                 {!loading && !book && companies && (
                     companies.length === 0 ? (
                         <p className="text-slate-600">
-                            No company has both buy and sell orders waiting to be matched.
+                            No company has orders waiting to be matched.
                         </p>
                     ) : (
                         <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -277,12 +288,26 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                                             <td className="px-4 py-3">{c.sellOrders} ({c.sellPending.toLocaleString("en-IN")})</td>
                                             <td className="px-4 py-3">{c.buyOrders} ({c.buyPending.toLocaleString("en-IN")})</td>
                                             <td className="px-4 py-3 text-right">
-                                                <button
-                                                    onClick={() => openCompany(c.companyCode)}
-                                                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                                                >
-                                                    Match orders
-                                                </button>
+                                                {c.canMatch ? (
+                                                    <button
+                                                        onClick={() => openCompany(c.companyCode)}
+                                                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                                                    >
+                                                        Match orders
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex items-center justify-end gap-3">
+                                                        <span className="text-xs text-slate-500">
+                                                            No {c.sellOrders > 0 ? "buyers" : "sellers"} yet
+                                                        </span>
+                                                        <button
+                                                            onClick={() => openCompany(c.companyCode)}
+                                                            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                                                        >
+                                                            View orders
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -294,8 +319,15 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
 
                 {!loading && book && (
                     <>
-                        {renderTable("Sellers", book.sellers, "red")}
-                        {renderTable("Buyers", book.buyers, "blue")}
+                        {!canMatch && (
+                            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                                This company only has {book.sellers.length > 0 ? "sell" : "buy"} orders waiting, so nothing
+                                can be matched yet. Matching opens once there is at least one seller and one buyer.
+                            </div>
+                        )}
+
+                        {renderTable("Sellers", book.sellers, "red", canMatch)}
+                        {renderTable("Buyers", book.buyers, "blue", canMatch)}
 
                         {saved && saved.groups.length > 0 && (
                             <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
@@ -331,22 +363,24 @@ export default function OrderMatchModal({ onClose, onError }: Props) {
                                 ← Back to companies
                             </button>
 
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={handleSave}
-                                    className="rounded-lg border border-blue-600 px-6 py-2 font-medium text-blue-700 hover:bg-blue-50"
-                                >
-                                    Save
-                                </button>
-                                <button
-                                    onClick={handleConfirm}
-                                    disabled={!saved || saved.problems.length > 0 || confirming}
-                                    title={!saved ? "Click Save first to check your entries" : undefined}
-                                    className="rounded-lg bg-green-600 px-6 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-                                >
-                                    {confirming ? "Confirming..." : "Confirm"}
-                                </button>
-                            </div>
+                            {canMatch && (
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={handleSave}
+                                        className="rounded-lg border border-blue-600 px-6 py-2 font-medium text-blue-700 hover:bg-blue-50"
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        onClick={handleConfirm}
+                                        disabled={!saved || saved.problems.length > 0 || confirming}
+                                        title={!saved ? "Click Save first to check your entries" : undefined}
+                                        className="rounded-lg bg-green-600 px-6 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                                    >
+                                        {confirming ? "Confirming..." : "Confirm"}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}

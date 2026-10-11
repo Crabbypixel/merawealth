@@ -25,7 +25,8 @@ export class OrderMatchService {
         private readonly sessionService: SessionService
     ) { }
 
-    // Companies with at least one buy and one sell order waiting to be matched (for the pop-up).
+    // Companies with orders waiting to be matched (for the pop-up). Companies with only
+    // buys or only sells are listed too, with canMatch false, so the admin can see them.
     async getCompanies() {
         const groups = await this.prisma.transaction.groupBy({
             by: ["companyCode", "type"],
@@ -47,17 +48,18 @@ export class OrderMatchService {
             byCompany.set(g.companyCode, entry);
         }
 
-        const codes = [...byCompany].filter(([, e]) => e.sellOrders > 0 && e.buyOrders > 0).map(([code]) => code);
-
         const companies = await this.prisma.company.findMany({
-            where: { companyCode: { in: codes } },
+            where: { companyCode: { in: [...byCompany.keys()] } },
             select: { companyCode: true, companyName: true },
             orderBy: { companyName: "asc" }
         });
 
         return {
             success: true,
-            companies: companies.map((c) => ({ ...c, ...byCompany.get(c.companyCode)! }))
+            companies: companies.map((c) => {
+                const entry = byCompany.get(c.companyCode)!;
+                return { ...c, ...entry, canMatch: entry.sellOrders > 0 && entry.buyOrders > 0 };
+            })
         };
     }
 
