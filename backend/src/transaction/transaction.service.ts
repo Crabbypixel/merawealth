@@ -140,6 +140,13 @@ export class TransactionService {
                     status: true,
                     createdAt: true,
 
+                    // Latest Order Match round for this order, shown as its matched date.
+                    matches: {
+                        select: { matchDate: true },
+                        orderBy: { matchDate: "desc" },
+                        take: 1,
+                    },
+
                     user: {
                         select: {
                             id: true,
@@ -168,7 +175,10 @@ export class TransactionService {
         ]);
 
         return {
-            transactions,
+            transactions: transactions.map(({ matches, ...t }) => ({
+                ...t,
+                matchedAt: matches[0]?.matchDate ?? null,
+            })),
             pagination: {
                 page: query.page,
                 limit: query.limit,
