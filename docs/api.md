@@ -35,6 +35,20 @@ noted) and return:
 { "pagination": { "page": 1, "limit": 10, "total": 42, "totalPages": 5 } }
 ```
 
+**Request limits.** Each visitor (IP address) can make up to 300 requests a minute. Some
+routes are tighter:
+
+| Route | Limit per visitor |
+|---|---|
+| `POST /auth/request-otp` | 5 a minute |
+| `POST /auth/verify-otp` | 10 a minute |
+| `POST /auth/register` | 5 every 15 minutes |
+| `POST /client/transactions` | 10 a minute |
+
+Going over a limit returns `429` with
+`"message": "Too many requests. Please wait a minute and try again."`. Behind nginx on the
+same server, the visitor's IP is read from `X-Forwarded-For`.
+
 ## Endpoints at a glance
 
 | Method | Path | Access | Purpose |
@@ -65,7 +79,6 @@ noted) and return:
 | POST | `/admin/order-match/:companyCode/confirm` | Admin | Store a set of matches |
 | GET | `/uploads/...` | Public | Static files (company logos, site images) |
 
-`GET /hello` and `POST /echo` are leftover test routes from the project's start.
 
 ---
 
@@ -107,8 +120,9 @@ Every admin gets a "New client registration" email.
 ```
 
 Looks the phone number up among admins and clients, emails a one-time code to that
-account's email address and returns a `challenge`. The code is valid for 5 minutes and
-requesting a new one invalidates the previous one.
+account's email address and returns a `challenge`. The code has 6 digits and is valid for
+5 minutes. Requesting a new one invalidates the previous one. An account can request one
+code a minute; asking sooner returns `429 Please wait N seconds before requesting a new OTP.`
 
 ```json
 { "success": true, "challenge": "9f2c…", "message": "OTP sent." }
@@ -119,8 +133,11 @@ Clients whose account is not `ACTIVE` can't request a code.
 ### `POST /auth/verify-otp`
 
 ```json
-{ "challenge": "9f2c…", "otp": 4821 }
+{ "challenge": "9f2c…", "otp": 482193 }
 ```
+
+Each code allows 5 guesses. A wrong code returns `400 Invalid OTP. N attempts left.`; after
+the fifth, the code stops working and the user must request a new one.
 
 On success it sets the `session` cookie (valid 7 days) and returns the role. Logging in
 ends any other active session for the same account.
@@ -215,7 +232,7 @@ Same fields as create, all optional, plus an optional new `logo` file.
 
 The price is taken from the company's indicative price at that moment and stored on the
 order as `priceAtOrder`; `totalAmount = priceAtOrder × quantity`. The company must be
-`ACTIVE` and `quantity` must be at least its `minQty`. A confirmation email is sent to
+`ACTIVE` and `quantity` must be at least its `minQty` and at most 1,00,00,000. A confirmation email is sent to
 the client and a "New BUY/SELL order" alert to every admin.
 
 ### `GET /client/transactions`

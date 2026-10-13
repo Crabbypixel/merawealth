@@ -98,6 +98,9 @@ model OtpLog {
   otp  Int
   used Boolean @default(false)
 
+  // Wrong guesses so far; the code stops working after 5
+  attempts Int @default(0)
+
   expiresAt DateTime
   createdAt DateTime @default(now())
 

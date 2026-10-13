@@ -4,8 +4,8 @@ import { randomBytes, randomInt } from 'crypto';
 @Injectable()
 export class OtpService {
     generateOtp(): number {
-        // TODO: Make it dynamic - read from file
-        return randomInt(1000, 10000);
+        // 6 digits: 900,000 possible codes
+        return randomInt(100000, 1000000);
     }
 
     // Generate challenge key

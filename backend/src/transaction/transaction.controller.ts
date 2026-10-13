@@ -7,6 +7,7 @@ import { AdminGuard } from 'src/admin/admin.guard';
 import { GetTransactionDto } from './dto/get-transactions.dto';
 import { UpdateTransactionStatusDto } from './dto/update-transaction-status.dto';
 import { EmailService } from 'src/email/email.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller("")
 export class TransactionController {
@@ -34,6 +35,7 @@ export class TransactionController {
     }
 
     // Create a transaction - client
+    @Throttle({ default: { limit: 10, ttl: 60_000 } })
     @Post("client/transactions")
     @UseGuards(ClientGuard)
     createTransaction(@Req() req : Request, @Body() dto : CreateTransactionDto) {

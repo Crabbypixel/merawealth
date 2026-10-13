@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpException, HttpStatus, UnauthorizedException, ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { OtpService } from './otp.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -11,6 +11,9 @@ import { Request } from "express";
 import { Role, UserStatus } from '@prisma/client';
 import { EmailService } from 'src/email/email.service';
 import { AdminAlertService } from 'src/email/admin-alert.service';
+
+const MAX_OTP_ATTEMPTS = 5;
+const OTP_RESEND_GAP_MS = 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -76,6 +79,22 @@ export class AuthService {
                 success: false,
                 message: "User not registered."
             });
+        }
+
+        // One code per account per minute, so nobody can flood an inbox
+        const lastOtp = await this.prisma.otpLog.findFirst({
+            where: { userId, adminId },
+            orderBy: { createdAt: "desc" },
+            select: { createdAt: true },
+        });
+        if (lastOtp) {
+            const waitSeconds = Math.ceil((lastOtp.createdAt.getTime() + OTP_RESEND_GAP_MS - Date.now()) / 1000);
+            if (waitSeconds > 0) {
+                throw new HttpException({
+                    success: false,
+                    message: `Please wait ${waitSeconds} seconds before requesting a new OTP.`
+                }, HttpStatus.TOO_MANY_REQUESTS);
+            }
         }
 
         // Generate OTP and challenge key
@@ -170,23 +189,44 @@ export class AuthService {
             });
         }
 
-        // Compare OTP
-        if (otpLog.otp !== dto.otp) {
+        // Count this guess before comparing. The condition makes it safe when many
+        // guesses arrive at once: only MAX_OTP_ATTEMPTS of them can ever get through.
+        const counted = await this.prisma.otpLog.updateMany({
+            where: { id: otpLog.id, used: false, attempts: { lt: MAX_OTP_ATTEMPTS } },
+            data: { attempts: { increment: 1 } }
+        });
+
+        if (counted.count === 0) {
             throw new BadRequestException({
                 success: false,
-                message: "Invalid OTP.",
+                message: "Too many wrong attempts. Please request a new OTP."
             });
         }
 
-        // Mark the OTP as used, cannot be used later
-        await this.prisma.otpLog.update({
-            where: {
-                id: otpLog.id,
-            },
-            data: {
-                used: true
-            }
+        // Compare OTP
+        if (otpLog.otp !== dto.otp) {
+            const attemptsLeft = Math.max(0, MAX_OTP_ATTEMPTS - (otpLog.attempts + 1));
+            throw new BadRequestException({
+                success: false,
+                message: attemptsLeft > 0
+                    ? `Invalid OTP. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`
+                    : "Too many wrong attempts. Please request a new OTP.",
+            });
+        }
+
+        // Mark the OTP as used in one step, so two requests with the same code
+        // can't both log in
+        const claimed = await this.prisma.otpLog.updateMany({
+            where: { id: otpLog.id, used: false },
+            data: { used: true }
         });
+
+        if (claimed.count === 0) {
+            throw new BadRequestException({
+                success: false,
+                message: "Login challenge already used."
+            });
+        }
 
         // Get role (Admin or client)
         const role = otpLog.role;

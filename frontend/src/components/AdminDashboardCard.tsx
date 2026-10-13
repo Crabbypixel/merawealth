@@ -198,9 +198,7 @@ export default function AdminCard() {
                 `${process.env.NEXT_PUBLIC_API_URL}/admin/companies/${selectedCompany.companyCode}`,
                 {
                     method: "PATCH",
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
+                    credentials: "include",
                     body: formData,
                 }
             );
@@ -414,9 +412,7 @@ export default function AdminCard() {
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/companies`, {
                 method: "POST",
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
+                credentials: "include",
                 body: formData,
             });
 

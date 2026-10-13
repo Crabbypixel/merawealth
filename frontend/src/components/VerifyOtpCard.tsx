@@ -100,10 +100,12 @@ export default function VerifyOtpCard() {
 
                 <input
                     className="w-full border rounded-md p-2 mb-4 text-gray-900 placeholder:text-gray-400"
-                    placeholder="Enter OTP"
+                    placeholder="Enter 6-digit OTP"
                     value={otp}
-                    autoComplete="off"
-                    onChange={(e) => setOtp(e.target.value)}
+                    inputMode="numeric"
+                    maxLength={6}
+                    autoComplete="one-time-code"
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                 />
 
                 <button
