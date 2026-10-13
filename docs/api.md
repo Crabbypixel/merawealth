@@ -98,6 +98,7 @@ client can log in.
 | `ifscCode` | 11 characters |
 
 Fails with `400 User already exists.` if the phone number or email is taken.
+Every admin gets a "New client registration" email.
 
 ### `POST /auth/request-otp`
 
@@ -215,7 +216,7 @@ Same fields as create, all optional, plus an optional new `logo` file.
 The price is taken from the company's indicative price at that moment and stored on the
 order as `priceAtOrder`; `totalAmount = priceAtOrder × quantity`. The company must be
 `ACTIVE` and `quantity` must be at least its `minQty`. A confirmation email is sent to
-the client.
+the client and a "New BUY/SELL order" alert to every admin.
 
 ### `GET /client/transactions`
 

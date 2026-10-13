@@ -24,6 +24,17 @@ export class EmailService {
             );
     }
 
+    // Sent as BCC so admins don't see each other's addresses.
+    async sendToAdmins(adminEmails: string[], subject: string, html: string) {
+        await this.transporter.sendMail({
+            from: `"MeraWealth Alerts" <${process.env.EMAIL_USER}>`,
+            to: `"MeraWealth Alerts" <${process.env.EMAIL_USER}>`,
+            bcc: adminEmails,
+            subject,
+            html,
+        });
+    }
+
     async sendLoginOtp(email: string, otp: number, isAdmin: boolean) {
         await this.transporter.sendMail({
             from: `"MeraWealth" <${process.env.EMAIL_USER}>`,

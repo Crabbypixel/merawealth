@@ -10,13 +10,15 @@ import type { Response } from "express";
 import { Request } from "express";
 import { Role, UserStatus } from '@prisma/client';
 import { EmailService } from 'src/email/email.service';
+import { AdminAlertService } from 'src/email/admin-alert.service';
 
 @Injectable()
 export class AuthService {
     constructor(private readonly otpService: OtpService,
         private readonly sessionService: SessionService,
         private readonly prisma: PrismaService,
-        private readonly emailService: EmailService
+        private readonly emailService: EmailService,
+        private readonly adminAlert: AdminAlertService
     ) { }
 
     // Request OTP backend
@@ -277,7 +279,7 @@ export class AuthService {
         }
 
         // Create a new entry in the user table
-        await this.prisma.user.create({
+        const user = await this.prisma.user.create({
             data: {
                 name: dto.name,
                 phoneNumber: dto.phoneNumber,
@@ -293,6 +295,9 @@ export class AuthService {
                 bankName: dto.bankName,
             }
         });
+
+        // Tell the admins; runs in the background and never fails the registration
+        void this.adminAlert.newRegistration(user.id);
 
         // Return a success JSON
         return {
