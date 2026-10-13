@@ -35,8 +35,8 @@ noted) and return:
 { "pagination": { "page": 1, "limit": 10, "total": 42, "totalPages": 5 } }
 ```
 
-**Request limits.** Each visitor (IP address) can make up to 300 requests a minute. Some
-routes are tighter:
+**Request limits.** Admin routes (`/admin/...`) have no limit. On every other route, each
+visitor (IP address) can make up to 300 requests a minute, and some are tighter:
 
 | Route | Limit per visitor |
 |---|---|
