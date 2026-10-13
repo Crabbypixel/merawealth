@@ -82,7 +82,7 @@ export default function TransactionHistoryPage() {
 
             // Display success message returned by your backend API
             alert(data.message || "Order successfully cancelled.");
-            await fetchUserTransactions();
+            await fetchUserTransactions(pagination.page);
         } catch (err) {
             handleError(err, "Unable to connect to server.");
         }
