@@ -113,7 +113,7 @@ through Gmail SMTP, using `EMAIL_USER` and `EMAIL_APP_PASSWORD`:
 - the login code,
 - an "Order Received" confirmation to the client when they place an order, and
 - two admin alerts from [`admin-alert.service.ts`](../backend/src/email/admin-alert.service.ts),
-  sent to every admin in the `Admin` table (as BCC):
+  sent straight to every admin in the `Admin` table:
   - **New client registration**: the client's contact, KYC and bank details (account
     number masked to the last 4 digits), and how many clients are waiting for approval.
   - **New BUY / SELL order** (blue for BUY, red for SELL): the order, the client, the open
