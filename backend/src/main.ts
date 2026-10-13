@@ -13,7 +13,12 @@ async function bootstrap() {
     app.set("trust proxy", "loopback");
 
     // Standard security headers. Images in /uploads stay loadable from the website.
-    app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+    // HTTPS is enforced for merawealth.in only, not its subdomains, so a future
+    // plain-HTTP subdomain (e.g. a staging server) keeps working.
+    app.use(helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+        strictTransportSecurity: { maxAge: 15552000, includeSubDomains: false },
+    }));
     
     // Enable cookie parsing middleware to handle cookies in requests.
     app.use(cookieParser());
