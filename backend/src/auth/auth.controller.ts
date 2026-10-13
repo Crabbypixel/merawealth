@@ -25,7 +25,7 @@ export class AuthController {
         return this.authService.verifyOtp(dto, res);
     }
 
-    @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
+    @Throttle({ default: { limit: 10, ttl: 15 * 60_000 } })
     @Post("register")
     register(@Body() dto : RegisterDto) {
         return this.authService.register(dto);

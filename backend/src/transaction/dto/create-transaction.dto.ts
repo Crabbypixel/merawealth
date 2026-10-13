@@ -13,7 +13,7 @@ export class CreateTransactionDto {
     @Type(() => Number)
     @IsInt()
     @Min(1)
-    // Keeps quantity x price inside the database columns
+    // Keeps quantity inside the database column; the order value is checked in the service
     @Max(10_000_000, { message: "Maximum quantity is 1,00,00,000 shares." })
     quantity: number;
 }

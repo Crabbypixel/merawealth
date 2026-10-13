@@ -9,6 +9,8 @@ import { UpdateTransactionStatusDto } from './dto/update-transaction-status.dto'
 import { EmailService } from 'src/email/email.service';
 import { AdminAlertService } from 'src/email/admin-alert.service';
 
+const MAX_ORDER_VALUE = 1_000_000_000_000;
+
 @Injectable()
 export class TransactionService {
     private readonly logger = new Logger(TransactionService.name);
@@ -79,6 +81,14 @@ export class TransactionService {
 
         const priceAtOrder = company.indicativePrice;
         const totalAmount = priceAtOrder.mul(dto.quantity);
+
+        // totalAmount is Decimal(14,2), so it must stay below ₹1,00,000 crore
+        if (totalAmount.gte(MAX_ORDER_VALUE)) {
+            throw new BadRequestException({
+                success: false,
+                message: "Order value is too large. Please reduce the quantity."
+            });
+        }
 
         const transaction = await this.prisma.transaction.create({
             data: {

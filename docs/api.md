@@ -42,7 +42,7 @@ visitor (IP address) can make up to 300 requests a minute, and some are tighter:
 |---|---|
 | `POST /auth/request-otp` | 5 a minute |
 | `POST /auth/verify-otp` | 10 a minute |
-| `POST /auth/register` | 5 every 15 minutes |
+| `POST /auth/register` | 10 every 15 minutes |
 | `POST /client/transactions` | 10 a minute |
 
 Going over a limit returns `429` with
