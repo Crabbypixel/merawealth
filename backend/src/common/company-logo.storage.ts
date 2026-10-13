@@ -1,29 +1,34 @@
 import { BadRequestException } from "@nestjs/common";
 import { diskStorage } from "multer";
-import { extname, join } from "path";
+import { join } from "path";
+
+// The saved file's extension comes from the image type, never from the uploaded
+// name, so a file called "logo.html" can't be saved and served as a web page.
+const EXTENSIONS: Record<string, string> = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/webp": ".webp",
+};
 
 export const companyLogoStorage = diskStorage({
     destination: join(process.cwd(), "uploads/company-logos"),
     filename(req, file, cb) {
         const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
 
-        // Extract the original name without its extension
-        const originalNameWithoutExt = file.originalname.substring(0, file.originalname.lastIndexOf('.'));
+        // Keep a readable part of the original name: letters, digits, - and _ only
+        const dot = file.originalname.lastIndexOf(".");
+        const baseName = (dot > 0 ? file.originalname.substring(0, dot) : file.originalname)
+            .replace(/[^a-zA-Z0-9_-]+/g, "-")
+            .slice(0, 50);
 
         // Combine: [Unique Number]-[Original Name][Extension]
-        cb(null, `${unique}-${originalNameWithoutExt}${extname(file.originalname)}`);
+        cb(null, `${unique}-${baseName}${EXTENSIONS[file.mimetype] ?? ".png"}`);
     }
 });
 
 export const companyLogoFilter = (req, file, cb) => {
-    const allowed = [
-        "image/png",
-        "image/jpeg",
-        "image/jpg",
-        "image/webp",
-    ];
-
-    if (!allowed.includes(file.mimetype)) {
+    if (!(file.mimetype in EXTENSIONS)) {
         return cb(new BadRequestException("Only PNG, JPEG, JPG and WebP files are allowed."), false);
     }
 

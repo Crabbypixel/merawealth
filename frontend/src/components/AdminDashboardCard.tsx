@@ -89,7 +89,6 @@ export default function AdminCard() {
         minQty: ""
     });
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [page, setPage] = useState(1);
     const limit = 10;
     const [pagination, setPagination] = useState({
         page: 1,
@@ -142,8 +141,9 @@ export default function AdminCard() {
         fetchTransactions();
     }, [router]);
 
+    // A new filter starts from page 1
     useEffect(() => {
-        fetchTransactions(selectedStatus);
+        fetchTransactions(selectedStatus, 1);
     }, [selectedStatus]);
 
     useEffect(() => {
@@ -198,9 +198,7 @@ export default function AdminCard() {
                 `${process.env.NEXT_PUBLIC_API_URL}/admin/companies/${selectedCompany.companyCode}`,
                 {
                     method: "PATCH",
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
+                    credentials: "include",
                     body: formData,
                 }
             );
@@ -279,7 +277,8 @@ export default function AdminCard() {
         }
     }
 
-    async function fetchUsers(page = 1, status = selectedUserStatus) {
+    // Reloads stay on the page the admin is viewing unless a page is given
+    async function fetchUsers(page = userPagination.page, status = selectedUserStatus) {
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
@@ -294,6 +293,13 @@ export default function AdminCard() {
                 `/admin/users?${params.toString()}`
             );
 
+            // An action can empty the last page (e.g. approving its only user under a
+            // status filter); step back to the new last page instead of showing nothing
+            const lastPage = Math.max(1, data.pagination.totalPages);
+            if (data.users.length === 0 && page > lastPage) {
+                return fetchUsers(lastPage, status);
+            }
+
             setUsers(data.users);
             setUserPagination(data.pagination);
         } catch (err) {
@@ -301,7 +307,7 @@ export default function AdminCard() {
         }
     }
 
-    async function fetchTransactions(status = selectedStatus, currentPage = page) {
+    async function fetchTransactions(status = selectedStatus, currentPage = pagination.page) {
         try {
             //setRefreshing(true);
 
@@ -318,6 +324,11 @@ export default function AdminCard() {
                 `/admin/transactions?${params.toString()}`
             );
 
+            const lastPage = Math.max(1, data.pagination.totalPages);
+            if (data.transactions.length === 0 && currentPage > lastPage) {
+                return fetchTransactions(status, lastPage);
+            }
+
             setTransactions(data.transactions);
             setPagination(data.pagination);
         } finally {
@@ -325,10 +336,9 @@ export default function AdminCard() {
         }
     }
 
+    // The selectedStatus effect reloads the list from page 1
     const handleStatusChange = (status: string) => {
         setSelectedStatus(status);
-        setPage(1);
-        fetchTransactions(status, 1);
     };
 
     const userStatuses = USER_STATUSES;
@@ -353,7 +363,7 @@ export default function AdminCard() {
         }
     }
 
-    async function fetchCompanies(page: number = 1) {
+    async function fetchCompanies(page: number = companyPagination.page) {
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
@@ -361,6 +371,11 @@ export default function AdminCard() {
             });
 
             const data = await apiFetch(`/admin/companies?${params.toString()}`);
+
+            const lastPage = Math.max(1, data.pagination.totalPages);
+            if (data.companies.length === 0 && page > lastPage) {
+                return fetchCompanies(lastPage);
+            }
 
             setCompanies(data.companies);
             setCompanyPagination(data.pagination);
@@ -397,9 +412,7 @@ export default function AdminCard() {
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/companies`, {
                 method: "POST",
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
+                credentials: "include",
                 body: formData,
             });
 

@@ -44,6 +44,7 @@ place orders on the website, and the MeraWealth team reviews, matches and settle
 
 ### For admins
 
+- **Email alerts** for every new registration and every new BUY or SELL order.
 - **Approve clients** after checking their KYC details, or reject or deactivate them.
 - **Manage companies**: add a company with its logo, set the indicative price and
   minimum quantity, list or unlist it.

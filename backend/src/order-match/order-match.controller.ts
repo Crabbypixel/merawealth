@@ -1,3 +1,4 @@
+import { SkipThrottle } from "@nestjs/throttler";
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { AdminGuard } from "src/admin/admin.guard";
@@ -5,6 +6,8 @@ import { ConfirmOrderMatchDto } from "./dto/confirm-order-match.dto";
 import { OrderMatchService } from "./order-match.service";
 
 // Manual order matching - admin only
+// Admin routes have no request limit; AdminGuard already requires an admin login
+@SkipThrottle()
 @UseGuards(AdminGuard)
 @Controller("admin/order-match")
 export class OrderMatchController {

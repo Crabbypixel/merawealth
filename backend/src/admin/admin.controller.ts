@@ -1,3 +1,4 @@
+import { SkipThrottle } from "@nestjs/throttler";
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { AdminGuard } from './admin.guard';
 import { AdminService } from './admin.service';
@@ -6,6 +7,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { GetUsersDto } from './dto/get-users.dto';
 
 // Admin guards only allows registered and logged-in admins to access these HTTP endpoints
+// Admin routes have no request limit; AdminGuard already requires an admin login
+@SkipThrottle()
 @UseGuards(AdminGuard)
 @Controller("admin")
 export class AdminController {

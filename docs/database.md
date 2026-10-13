@@ -79,6 +79,7 @@ erDiagram
         string challenge UK
         int otp
         boolean used
+        int attempts
         Role role
         datetime expiresAt
     }
@@ -144,8 +145,9 @@ cookie. Sessions last 7 days. A new login ends the account's other sessions, and
 ### `OtpLog`
 
 A login code. The browser gets a random `challenge` and sends it back with the code, so
-the phone number never travels with the OTP. Codes expire after 5 minutes and are marked
-`used` once verified.
+the phone number never travels with the OTP. Codes have 4 digits, expire after 5 minutes
+and are marked `used` once verified. `attempts` counts wrong guesses; after 5 the code no
+longer works.
 
 `Session` and `OtpLog` belong to either a client or an admin: exactly one of `userId` and
 `adminId` is set, and `role` says which.

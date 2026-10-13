@@ -42,9 +42,15 @@ export class ClientGuard implements CanActivate {
         }
 
         if(session.user.status !== "ACTIVE") {
+            // The wording picks the reason shown on the session-ended page
+            const messages = {
+                PENDING: "Account pending approval.",
+                REJECTED: "Your account has been rejected.",
+                INACTIVE: "Account inactive.",
+            };
             throw new ForbiddenException({
                 success: false,
-                message: "Account is not active."
+                message: messages[session.user.status] ?? "Account inactive."
             });
         }
 

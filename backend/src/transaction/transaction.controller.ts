@@ -7,6 +7,7 @@ import { AdminGuard } from 'src/admin/admin.guard';
 import { GetTransactionDto } from './dto/get-transactions.dto';
 import { UpdateTransactionStatusDto } from './dto/update-transaction-status.dto';
 import { EmailService } from 'src/email/email.service';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @Controller("")
 export class TransactionController {
@@ -14,6 +15,7 @@ export class TransactionController {
     
     // Get transactions done by all clients (can send status of transactions to filter accordingly)
     @Get("admin/transactions")
+    @SkipThrottle()
     @UseGuards(AdminGuard)
     getTransactionsAdmin(@Query() query : GetTransactionDto) {
         return this.transactionService.getTransactionsAdmin(query);
@@ -21,6 +23,7 @@ export class TransactionController {
 
     // Update transaction status
     @Patch("admin/transactions/:id")
+    @SkipThrottle()
     @UseGuards(AdminGuard)
     updateTransactionStatus(@Param("id", ParseIntPipe) id: number, @Body() dto : UpdateTransactionStatusDto) {
         return this.transactionService.updateTransactionStatus(id, dto);        
@@ -34,6 +37,7 @@ export class TransactionController {
     }
 
     // Create a transaction - client
+    @Throttle({ default: { limit: 10, ttl: 60_000 } })
     @Post("client/transactions")
     @UseGuards(ClientGuard)
     createTransaction(@Req() req : Request, @Body() dto : CreateTransactionDto) {

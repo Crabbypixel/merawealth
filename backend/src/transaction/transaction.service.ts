@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Logger, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CompanyStatus, TransactionStatus } from '@prisma/client';
@@ -7,12 +7,18 @@ import { SessionService } from 'src/auth/session.service';
 import { GetTransactionDto } from './dto/get-transactions.dto';
 import { UpdateTransactionStatusDto } from './dto/update-transaction-status.dto';
 import { EmailService } from 'src/email/email.service';
+import { AdminAlertService } from 'src/email/admin-alert.service';
+
+const MAX_ORDER_VALUE = 1_000_000_000_000;
 
 @Injectable()
 export class TransactionService {
+    private readonly logger = new Logger(TransactionService.name);
+
     constructor(private readonly prisma: PrismaService,
         private readonly sessionService: SessionService,
-        private readonly emailService: EmailService
+        private readonly emailService: EmailService,
+        private readonly adminAlert: AdminAlertService
     ) { }
 
     async createTransaction(req: Request, dto: CreateTransactionDto) {
@@ -76,6 +82,14 @@ export class TransactionService {
         const priceAtOrder = company.indicativePrice;
         const totalAmount = priceAtOrder.mul(dto.quantity);
 
+        // totalAmount is Decimal(14,2), so it must stay below ₹1,00,000 crore
+        if (totalAmount.gte(MAX_ORDER_VALUE)) {
+            throw new BadRequestException({
+                success: false,
+                message: "Order value is too large. Please reduce the quantity."
+            });
+        }
+
         const transaction = await this.prisma.transaction.create({
             data: {
                 userId: session.userId,
@@ -104,8 +118,12 @@ export class TransactionService {
             session.user.dematDpId,
             formattedDueDate
         ).catch((err) => {
-            throw new InternalServerErrorException("Unable to send confirmation email.")
+            // Throwing here would crash the API: the order is already saved and the response sent
+            this.logger.error(`Order confirmation email for order ${transaction.id} failed`, err);
         });
+
+        // Tell the admins; runs in the background and never fails the order
+        void this.adminAlert.newOrder(transaction.id);
 
         return {
             success: true,

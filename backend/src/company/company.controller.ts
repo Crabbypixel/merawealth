@@ -1,3 +1,4 @@
+import { SkipThrottle } from "@nestjs/throttler";
 import { Body, Controller, Post, UseGuards, Param, Patch, Get, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { AdminGuard } from 'src/admin/admin.guard';
 import { CompanyService } from './company.service';
@@ -16,6 +17,7 @@ export class CompanyController {
 
     // Get all companies
     @Get("admin/companies")
+    @SkipThrottle()
     @UseGuards(AdminGuard)
     getCompaniesAdmin(@Query() query: GetCompanyDto) {
         return this.companyService.getCompaniesAdmin(query);
@@ -35,6 +37,7 @@ export class CompanyController {
         limits: { fileSize: 5 * 1024 * 1024 },
         fileFilter: companyLogoFilter
     }))
+    @SkipThrottle()
     @UseGuards(AdminGuard)
     createCompany(@UploadedFile() logo: Express.Multer.File, @Body() dto: CreateCompanyDto) {
         if (!logo) {
@@ -49,6 +52,7 @@ export class CompanyController {
 
     // Get company details (by ID)
     @Get("admin/companies/:companyCode")
+    @SkipThrottle()
     @UseGuards(AdminGuard)
     getCompany(@Param("companyCode") companyCode: string) {
         return this.companyService.getCompany(companyCode);
@@ -61,6 +65,7 @@ export class CompanyController {
         limits: { fileSize: 5 * 1024 * 1024 },
         fileFilter: companyLogoFilter
     }))
+    @SkipThrottle()
     @UseGuards(AdminGuard)
     updateCompany(
         @Param("companyCode") companyCode: string,
@@ -72,6 +77,7 @@ export class CompanyController {
 
     // Update company listing status
     @Patch("admin/companies/:companyCode/status")
+    @SkipThrottle()
     @UseGuards(AdminGuard)
     updateCompanyStatus(@Param("companyCode") companyCode: string, @Body() dto: UpdateCompanyStatusDto) {
         return this.companyService.updateCompanyStatus(companyCode, dto);

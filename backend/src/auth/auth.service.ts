@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpException, HttpStatus, UnauthorizedException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { OtpService } from './otp.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -10,13 +10,18 @@ import type { Response } from "express";
 import { Request } from "express";
 import { Role, UserStatus } from '@prisma/client';
 import { EmailService } from 'src/email/email.service';
+import { AdminAlertService } from 'src/email/admin-alert.service';
+
+const MAX_OTP_ATTEMPTS = 5;
+const OTP_RESEND_GAP_MS = 60 * 1000;
 
 @Injectable()
 export class AuthService {
     constructor(private readonly otpService: OtpService,
         private readonly sessionService: SessionService,
         private readonly prisma: PrismaService,
-        private readonly emailService: EmailService
+        private readonly emailService: EmailService,
+        private readonly adminAlert: AdminAlertService
     ) { }
 
     // Request OTP backend
@@ -81,45 +86,59 @@ export class AuthService {
         const challenge = this.otpService.generateChallenge();
         const expiry = new Date(Date.now() + 5 * 60 * 1000);     // 5 minutes
 
-        // Send OTP to user's email asynchronously (non-blocking)
-        try {
-            if (user) {
-                this.emailService.sendLoginOtp(user.email, otp, false).catch((err) => {
-                    console.error("Background OTP Email Delivery Failed:", err);
-                });
-            } else if (admin) {
-                this.emailService.sendLoginOtp(admin.email, otp, true).catch((err) => {
-                    console.error("Background OTP Email Delivery Failed:", err);
-                });
+        // Check, invalidate and create in one transaction, locked per account, so
+        // parallel requests can't slip past the one-a-minute rule or leave two live codes
+        await this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${`otp:${role}:${userId ?? adminId}`}))`;
+
+            // One code per account per minute, so nobody can flood an inbox
+            const lastOtp = await tx.otpLog.findFirst({
+                where: { userId, adminId },
+                orderBy: { createdAt: "desc" },
+                select: { createdAt: true },
+            });
+            if (lastOtp) {
+                const waitSeconds = Math.ceil((lastOtp.createdAt.getTime() + OTP_RESEND_GAP_MS - Date.now()) / 1000);
+                if (waitSeconds > 0) {
+                    throw new HttpException({
+                        success: false,
+                        message: `Please wait ${waitSeconds} seconds before requesting a new OTP.`
+                    }, HttpStatus.TOO_MANY_REQUESTS);
+                }
             }
-        } catch (error) {
-            // Note: This catch block will now only catch synchronous failures (like missing configuration parameters)
-            throw new InternalServerErrorException("Unable to initiate OTP process.");
+
+            // Invalidate all previous OTPs for this user, so that only the latest OTP is valid
+            await tx.otpLog.updateMany({
+                where: {
+                    userId: userId,
+                    adminId: adminId,
+                    used: false
+                },
+                data: {
+                    used: true
+                }
+            });
+
+            // Add new OTP entry
+            await tx.otpLog.create({
+                data: {
+                    otp: otp,
+                    challenge: challenge,
+                    expiresAt: expiry,
+                    userId: userId,
+                    adminId: adminId,
+                    role: role
+                },
+            });
+        });
+
+        // Send OTP to user's email asynchronously (non-blocking), only once it is saved
+        const recipient = user ?? admin;
+        if (recipient) {
+            this.emailService.sendLoginOtp(recipient.email, otp, !user).catch((err) => {
+                console.error("Background OTP Email Delivery Failed:", err);
+            });
         }
-
-        // Invalidate all previous OTPs for this user, so that only the latest OTP is valid
-        await this.prisma.otpLog.updateMany({
-            where: {
-                userId: userId,
-                adminId: adminId,
-                used: false
-            },
-            data: {
-                used: true
-            }
-        });
-
-        // Add new OTP entry
-        await this.prisma.otpLog.create({
-            data: {
-                otp: otp,
-                challenge: challenge,
-                expiresAt: expiry,
-                userId: userId,
-                adminId: adminId,
-                role: role
-            },
-        });
 
         // The frontend sends { challenge key + OTP }, not { phoneNumber + OTP },
         // as it's more secure to send a key, one can easily tamper phone number
@@ -168,23 +187,44 @@ export class AuthService {
             });
         }
 
-        // Compare OTP
-        if (otpLog.otp !== dto.otp) {
+        // Count this guess before comparing. The condition makes it safe when many
+        // guesses arrive at once: only MAX_OTP_ATTEMPTS of them can ever get through.
+        const counted = await this.prisma.otpLog.updateMany({
+            where: { id: otpLog.id, used: false, attempts: { lt: MAX_OTP_ATTEMPTS } },
+            data: { attempts: { increment: 1 } }
+        });
+
+        if (counted.count === 0) {
             throw new BadRequestException({
                 success: false,
-                message: "Invalid OTP.",
+                message: "Too many wrong attempts. Please request a new OTP."
             });
         }
 
-        // Mark the OTP as used, cannot be used later
-        await this.prisma.otpLog.update({
-            where: {
-                id: otpLog.id,
-            },
-            data: {
-                used: true
-            }
+        // Compare OTP
+        if (otpLog.otp !== dto.otp) {
+            const attemptsLeft = Math.max(0, MAX_OTP_ATTEMPTS - (otpLog.attempts + 1));
+            throw new BadRequestException({
+                success: false,
+                message: attemptsLeft > 0
+                    ? `Invalid OTP. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`
+                    : "Too many wrong attempts. Please request a new OTP.",
+            });
+        }
+
+        // Mark the OTP as used in one step, so two requests with the same code
+        // can't both log in
+        const claimed = await this.prisma.otpLog.updateMany({
+            where: { id: otpLog.id, used: false },
+            data: { used: true }
         });
+
+        if (claimed.count === 0) {
+            throw new BadRequestException({
+                success: false,
+                message: "Login challenge already used."
+            });
+        }
 
         // Get role (Admin or client)
         const role = otpLog.role;
@@ -277,7 +317,7 @@ export class AuthService {
         }
 
         // Create a new entry in the user table
-        await this.prisma.user.create({
+        const user = await this.prisma.user.create({
             data: {
                 name: dto.name,
                 phoneNumber: dto.phoneNumber,
@@ -293,6 +333,9 @@ export class AuthService {
                 bankName: dto.bankName,
             }
         });
+
+        // Tell the admins; runs in the background and never fails the registration
+        void this.adminAlert.newRegistration(user.id);
 
         // Return a success JSON
         return {

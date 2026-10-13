@@ -4,7 +4,7 @@ import { randomBytes, randomInt } from 'crypto';
 @Injectable()
 export class OtpService {
     generateOtp(): number {
-        // TODO: Make it dynamic - read from file
+        // 4 digits; guessing is limited by MAX_OTP_ATTEMPTS in AuthService
         return randomInt(1000, 10000);
     }
 

@@ -64,7 +64,7 @@ database access) and **DTOs** (request shapes, checked by `class-validator`).
 | `CompanyModule` | Company CRUD, listing status, logo upload, public company list |
 | `TransactionModule` | Placing, listing, cancelling and changing the status of orders |
 | `OrderMatchModule` | Manual order matching, see [order-lifecycle.md](order-lifecycle.md) |
-| `EmailModule` | Sends OTP and order confirmation emails over Gmail SMTP |
+| `EmailModule` | Sends OTP, order confirmation and admin alert emails over Gmail SMTP |
 | `TasksModule` | Every 5 minutes, ends expired sessions and deletes expired OTPs |
 | `PrismaModule` | Shared database client |
 
@@ -107,11 +107,20 @@ sequenceDiagram
 
 ### Emails
 
-[`email.service.ts`](../backend/src/email/email.service.ts) sends two kinds of email
+[`email.service.ts`](../backend/src/email/email.service.ts) sends these emails
 through Gmail SMTP, using `EMAIL_USER` and `EMAIL_APP_PASSWORD`:
 
-- the login code, and
-- an "Order Received" confirmation when a client places an order.
+- the login code,
+- an "Order Received" confirmation to the client when they place an order, and
+- two admin alerts from [`admin-alert.service.ts`](../backend/src/email/admin-alert.service.ts),
+  sent straight to every admin in the `Admin` table:
+  - **New client registration**: the client's contact, KYC and bank details (account
+    number masked to the last 4 digits), and how many clients are waiting for approval.
+  - **New BUY / SELL order** (blue for BUY, red for SELL): the order, the client, the open
+    buy and sell orders for that company, and how many orders are waiting to be verified.
+
+Emails are sent in the background. If sending fails, the error is logged and the
+registration or order still succeeds. Times are shown in India time (IST).
 
 Order matching sends no emails.
 

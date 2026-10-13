@@ -1,6 +1,5 @@
 import { ConfigModule } from "@nestjs/config";
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -13,6 +12,8 @@ import { TransactionModule } from './transaction/transaction.module';
 import { OrderMatchModule } from './order-match/order-match.module';
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "path";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 
 @Module({
   imports: [
@@ -20,6 +21,11 @@ import { join } from "path";
     PrismaModule,
     TasksModule,
     ScheduleModule.forRoot(),
+    // Per-visitor request limit. Login, register and order routes set tighter limits with @Throttle.
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 300 }],
+      errorMessage: "Too many requests. Please wait a minute and try again.",
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -34,7 +40,6 @@ import { join } from "path";
     OrderMatchModule
   ],
 
-  controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule { }
