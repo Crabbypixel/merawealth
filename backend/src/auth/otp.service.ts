@@ -4,8 +4,8 @@ import { randomBytes, randomInt } from 'crypto';
 @Injectable()
 export class OtpService {
     generateOtp(): number {
-        // 6 digits: 900,000 possible codes
-        return randomInt(100000, 1000000);
+        // 4 digits; guessing is limited by MAX_OTP_ATTEMPTS in AuthService
+        return randomInt(1000, 10000);
     }
 
     // Generate challenge key

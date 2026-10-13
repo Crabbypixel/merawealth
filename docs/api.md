@@ -120,7 +120,7 @@ Every admin gets a "New client registration" email.
 ```
 
 Looks the phone number up among admins and clients, emails a one-time code to that
-account's email address and returns a `challenge`. The code has 6 digits and is valid for
+account's email address and returns a `challenge`. The code has 4 digits and is valid for
 5 minutes. Requesting a new one invalidates the previous one. An account can request one
 code a minute; asking sooner returns `429 Please wait N seconds before requesting a new OTP.`
 
@@ -133,7 +133,7 @@ Clients whose account is not `ACTIVE` can't request a code.
 ### `POST /auth/verify-otp`
 
 ```json
-{ "challenge": "9f2c…", "otp": 482193 }
+{ "challenge": "9f2c…", "otp": 4821 }
 ```
 
 Each code allows 5 guesses. A wrong code returns `400 Invalid OTP. N attempts left.`; after

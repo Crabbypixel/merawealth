@@ -145,7 +145,7 @@ cookie. Sessions last 7 days. A new login ends the account's other sessions, and
 ### `OtpLog`
 
 A login code. The browser gets a random `challenge` and sends it back with the code, so
-the phone number never travels with the OTP. Codes have 6 digits, expire after 5 minutes
+the phone number never travels with the OTP. Codes have 4 digits, expire after 5 minutes
 and are marked `used` once verified. `attempts` counts wrong guesses; after 5 the code no
 longer works.
 
